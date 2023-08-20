@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand};
 
 use crate::{
     config::{Config, Record, RecordType},
-    godaddy_api::{self, GoDaddyAPI},
+    godaddy_api::GoDaddyAPI,
 };
 use reqwest;
 

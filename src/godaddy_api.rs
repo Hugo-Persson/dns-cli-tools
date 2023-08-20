@@ -1,7 +1,7 @@
 use reqwest::Client;
 use serde_json::json;
 
-use crate::config::{Record, RecordType};
+use crate::config::Record;
 
 pub struct GoDaddyAPI {
     api_key: String,

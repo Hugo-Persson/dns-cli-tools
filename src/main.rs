@@ -1,4 +1,4 @@
-use cli_program::{CLIProgram, Cli};
+use cli_program::CLIProgram;
 
 mod cli_program;
 mod config;
