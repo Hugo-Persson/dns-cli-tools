@@ -1,9 +1,11 @@
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
-use serde_json::json;
 
-use crate::config::{Config, Record, RecordType};
+use crate::{
+    config::{Config, Record, RecordType},
+    godaddy_api::{self, GoDaddyAPI},
+};
 use reqwest;
 
 #[derive(Parser)]
@@ -42,7 +44,7 @@ pub struct CLIProgram {
     cli: Cli,
 }
 
-fn get_config(path: PathBuf) -> Option<Config> {
+fn get_config(path: &PathBuf) -> Option<Config> {
     if !path.exists() {
         println!(
             "No config file found for path: {:?}, maybe run the `init` command first?",
@@ -89,7 +91,7 @@ impl CLIProgram {
             Some(Commands::CheckForNewIP { force }) => {
                 self.check_for_new_ip(force.to_owned()).await
             }
-            Some(Commands::RegisterSubDomain { prefix }) => self.register_sub_domain(prefix),
+            Some(Commands::RegisterSubDomain { prefix }) => self.register_sub_domain(prefix).await,
             Some(Commands::Init {}) => self.init(),
             None => {
                 println!("Nothing")
@@ -97,7 +99,7 @@ impl CLIProgram {
         }
     }
 
-    async fn check_for_new_ip(&self, force: bool) {
+    async fn check_for_new_ip(&self, force: bool) -> () {
         println!("Checking for new ip...");
         let old_ip = Self::get_last_ip();
         let current_ip = Self::get_current_ip().await;
@@ -109,7 +111,7 @@ impl CLIProgram {
             } else {
                 println!("IP has changed, updating records");
             }
-            if let Some(config) = get_config(get_config_path(self.cli.config.clone())) {
+            if let Some(config) = get_config(&get_config_path(self.cli.config.clone())) {
                 Self::update_records(&current_ip, &config).await;
                 Self::save_ip(&current_ip).await;
             }
@@ -144,34 +146,41 @@ impl CLIProgram {
     }
     async fn update_records(new_ip: &String, config: &Config) -> () {
         println!("Updating records...");
-        let client = reqwest::Client::new();
-        for record in &config.records {
-            let url = format!(
-                "https://api.godaddy.com/v1/domains/{}/records/{}/{}",
-                config.domain,
-                record.record_type.to_string(),
-                record.name
-            );
-            let body =
-                vec![json!({"data": new_ip, "ttl": 600, "type": record.record_type.to_string()})];
-            let resp = client
-                .put(&url)
-                .header(
-                    "authorization",
-                    format!("sso-key {}:{}", config.api_key, config.secret),
-                )
-                .json(&body)
-                .send()
-                .await
-                .unwrap()
-                .text()
-                .await;
+        let api = GoDaddyAPI::new(
+            config.api_key.clone(),
+            config.secret.clone(),
+            config.domain.clone(),
+            new_ip.to_string(),
+        );
 
-            println!("Response: {:?}", resp);
+        for record in &config.records {
+            api.put_sub_domain(record).await;
         }
     }
 
-    fn register_sub_domain(&self, prefix: &String) {}
+    async fn register_sub_domain(&self, prefix: &String) -> () {
+        println!("Registering subdomain {}...", prefix);
+        let path = get_config_path(self.cli.config.clone());
+        if let Some(mut config) = get_config(&path) {
+            let api = GoDaddyAPI::new(
+                config.api_key.clone(),
+                config.secret.clone(),
+                config.domain.clone(),
+                Self::get_current_ip().await,
+            );
+            api.put_sub_domain(&Record {
+                name: prefix.to_string(),
+                record_type: RecordType::A,
+            })
+            .await;
+
+            config.records.push(Record {
+                name: prefix.to_owned(),
+                record_type: RecordType::A,
+            });
+            Self::write_config(&path, &config);
+        }
+    }
 
     fn init(&self) {
         let path = get_config_path(self.cli.config.clone());
@@ -185,8 +194,12 @@ impl CLIProgram {
 
         println!("Creating new config file...");
         let config = get_default_config();
+        Self::write_config(&path, &config);
+        println!("Done!");
+    }
+
+    fn write_config(path: &PathBuf, config: &Config) {
         let config_json = serde_json::to_string_pretty(&config).unwrap();
         std::fs::write(path, config_json).unwrap();
-        println!("Done!");
     }
 }
