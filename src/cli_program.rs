@@ -9,7 +9,7 @@ use reqwest;
 #[derive(Parser)]
 #[command(author, version, about, long_about = None, arg_required_else_help = true)]
 pub struct Cli {
-    /// Sets a custom config file
+    /// Sets a custom config file. Default file is ~/.config/godaddy-config.json
     #[arg(short, long, value_name = "FILE")]
     config: Option<PathBuf>,
 
@@ -68,7 +68,11 @@ fn get_default_config() -> Config {
 }
 
 fn get_config_path(custom_path: Option<PathBuf>) -> PathBuf {
-    custom_path.unwrap_or(PathBuf::from("config.json"))
+    custom_path.unwrap_or(
+        home::home_dir()
+            .unwrap()
+            .join(".config/godaddy-config.json"),
+    )
 }
 impl CLIProgram {
     pub async fn new() -> CLIProgram {
