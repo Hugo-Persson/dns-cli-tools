@@ -24,7 +24,11 @@ pub struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// does testing things
-    CheckForNewIP {},
+    CheckForNewIP {
+        /// Forces the update of the records even if the IP has not changed
+        #[arg(short, long)]
+        force: bool,
+    },
     /// Creates a new subdomain
     RegisterSubDomain {
         /// The prefix will the domain will become this arg.example.org
@@ -78,7 +82,9 @@ impl CLIProgram {
         // You can check for the existence of subcommands, and if found use their
         // matches just as you would the top level cmd
         match &self.cli.command {
-            Some(Commands::CheckForNewIP {}) => self.check_for_new_ip().await,
+            Some(Commands::CheckForNewIP { force }) => {
+                self.check_for_new_ip(force.to_owned()).await
+            }
             Some(Commands::RegisterSubDomain { prefix }) => self.register_sub_domain(prefix),
             Some(Commands::Init {}) => self.init(),
             None => {
@@ -87,14 +93,18 @@ impl CLIProgram {
         }
     }
 
-    async fn check_for_new_ip(&self) {
+    async fn check_for_new_ip(&self, force: bool) {
         println!("Checking for new ip...");
         let old_ip = Self::get_last_ip();
         let current_ip = Self::get_current_ip().await;
-        if old_ip == current_ip {
+        if old_ip == current_ip && !force {
             println!("IP has not changed, doing nothing");
         } else {
-            println!("IP has changed, updating records");
+            if force {
+                println!("Force flag set, updating records")
+            } else {
+                println!("IP has changed, updating records");
+            }
             if let Some(config) = get_config(get_config_path(self.cli.config.clone())) {
                 Self::update_records(&current_ip, &config).await;
                 Self::save_ip(&current_ip).await;
