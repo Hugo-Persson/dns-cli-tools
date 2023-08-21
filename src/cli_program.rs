@@ -26,13 +26,13 @@ pub struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Checks if IP has changed and if it has changed updates all the DNS entries tied to this server
-    CheckForNewIP {
+    Check {
         /// Forces the update of the records even if the IP has not changed
         #[arg(short, long)]
         force: bool,
     },
     /// Creates a new subdomain
-    RegisterSubDomain {
+    Register {
         /// The prefix will the domain will become this arg.example.org
         prefix: String,
     },
@@ -59,11 +59,9 @@ impl CLIProgram {
         // You can check for the existence of subcommands, and if found use their
         // matches just as you would the top level cmd
         match &self.cli.command {
-            Some(Commands::CheckForNewIP { force }) => {
-                self.check_for_new_ip(force.to_owned()).await
-            }
+            Some(Commands::Check { force }) => self.check_for_new_ip(force.to_owned()).await,
             Some(Commands::Ls {}) => self.ls(),
-            Some(Commands::RegisterSubDomain { prefix }) => self.register_sub_domain(prefix).await,
+            Some(Commands::Register { prefix }) => self.register_sub_domain(prefix).await,
             Some(Commands::Init {}) => self.init(),
             None => {
                 println!("Nothing")
