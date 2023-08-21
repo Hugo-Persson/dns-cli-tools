@@ -8,13 +8,13 @@ pub struct Config {
     pub secret: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Record {
     pub name: String,
     pub record_type: RecordType,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum RecordType {
     A,
     AAA,
