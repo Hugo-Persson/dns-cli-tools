@@ -1,17 +1,20 @@
 [package]
 name = "godaddy-cli-tools"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 
 authors = ["Hugo Persson <hugo.e.persson@gmail.com>"]
 license = "MIT OR Apache-2.0"
-description = "A tool to search files"
+description = "A command line tool for managing GoDaddy DNS records"
 readme = "README.md"
 homepage = "https://github.com/Hugo-Persson/godaddy-cli-tools"
 repository = "https://github.com/Hugo-Persson/godaddy-cli-tools"
 keywords = ["cli", "godaddy", "dns"]
 categories = ["command-line-utilities"]
 
+[[bin]]
+name = "godaddy"
+path = "src/main.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

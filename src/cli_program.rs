@@ -31,15 +31,15 @@ enum Commands {
         #[arg(short, long)]
         force: bool,
     },
-    /// Creates a new subdomain
+    /// Creates a new subdomain and ties to to this server by updating the IP it points to to the current IP and adding it to the config file of domains to scrape
     Register {
         /// The prefix will the domain will become this arg.example.org
         prefix: String,
     },
-    /// Creates a new config file
+    /// Creates a new config file at the configured config path or default path.
     Init {},
 
-    /// Lists all the subdomains and their record types
+    /// Lists all the subdomains and their record types that are being tracked
     Ls {},
 
     /// Deletes a subdomain (Not ready yet)
@@ -51,12 +51,17 @@ enum Commands {
 
 pub struct CLIProgram {
     cli: Cli,
+    debug: bool,
 }
 
 impl CLIProgram {
     pub async fn new() -> CLIProgram {
         let cli = Cli::parse();
-        let c = CLIProgram { cli };
+        let debug = cli.debug;
+        let c = CLIProgram {
+            cli,
+            debug: debug > 0,
+        };
         c.start().await;
         c
     }
@@ -78,30 +83,31 @@ impl CLIProgram {
 
     async fn check_for_new_ip(&self, force: bool) -> () {
         println!("Checking for new ip...");
-        let old_ip = get_last_ip();
+        let old_ip = get_last_ip(self.debug);
         let current_ip = get_current_ip().await;
         if old_ip == current_ip && !force {
             println!("IP has not changed, doing nothing");
         } else {
             if force {
-                println!("Force flag set, updating records")
+                println!("IP has not changed bug force flag set, updating records")
             } else {
                 println!("IP has changed, updating records");
             }
             if let Some(config) = get_config(&get_config_path(self.cli.config.clone())) {
-                Self::update_records(&current_ip, &config).await;
+                Self::update_records(&current_ip, &config, self.debug).await;
                 save_ip(&current_ip).await;
             }
         }
     }
 
-    async fn update_records(new_ip: &String, config: &Config) -> () {
+    async fn update_records(new_ip: &String, config: &Config, debug: bool) -> () {
         println!("Updating records...");
         let api = GoDaddyAPI::new(
             config.api_key.clone(),
             config.secret.clone(),
             config.domain.clone(),
             new_ip.to_string(),
+            debug,
         );
 
         for record in &config.records {
@@ -119,6 +125,7 @@ impl CLIProgram {
                 config.secret.clone(),
                 config.domain.clone(),
                 get_current_ip().await,
+                self.debug,
             );
             api.put_sub_domain(&Record {
                 name: prefix.to_string(),
@@ -137,14 +144,13 @@ impl CLIProgram {
     fn init(&self) {
         let path = get_config_path(self.cli.config.clone());
         if path.exists() {
-            println!(
+            panic!(
                 "Config file already exists at {:?}, delete file to continue",
                 path
             );
-            return;
         }
 
-        println!("Creating new config file...");
+        println!("Creating new config file at path: {:?}", path);
         let config = get_default_config();
         write_config(&path, &config);
         println!("Done!");
@@ -172,12 +178,14 @@ fn write_config(path: &PathBuf, config: &Config) {
     std::fs::write(path, config_json).unwrap();
 }
 
-fn get_last_ip() -> String {
-    let home = home::home_dir().expect("Could not get home dir :(");
+fn get_last_ip(debug: bool) -> String {
+    let home = home::home_dir().expect("Could not get home dir :(, please file bug report");
 
     let path = home.join(".last_ip.txt");
     if !path.exists() {
-        println!("No last ip file found, probably first run");
+        if debug {
+            println!("No last ip file found, probably first run");
+        }
         return "".to_string();
     }
     std::fs::read_to_string(path).unwrap()
