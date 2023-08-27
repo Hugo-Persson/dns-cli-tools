@@ -41,6 +41,12 @@ enum Commands {
 
     /// Lists all the subdomains and their record types
     Ls {},
+
+    /// Deletes a subdomain (Not ready yet)
+    Rm {
+        /// The prefix of the subdomain that should be deleted
+        prefix: String,
+    },
 }
 
 pub struct CLIProgram {
@@ -63,6 +69,7 @@ impl CLIProgram {
             Some(Commands::Ls {}) => self.ls(),
             Some(Commands::Register { prefix }) => self.register_sub_domain(prefix).await,
             Some(Commands::Init {}) => self.init(),
+            Some(Commands::Rm { prefix: _ }) => println!("Not implemented yet"),
             None => {
                 println!("Nothing")
             }
