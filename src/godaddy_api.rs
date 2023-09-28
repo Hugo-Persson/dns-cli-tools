@@ -15,8 +15,7 @@ pub struct GoDaddyAPI {
     client: Client,
     debug: bool,
 }
-
-impl DnsProvider for  GoDaddyAPI {
+impl GoDaddyAPI{
     pub fn new(
         api_key: String,
         secret: String,
@@ -41,8 +40,8 @@ impl DnsProvider for  GoDaddyAPI {
         api_key: &String,
         secret: &String,
     ) -> Result<String, Box<dyn Error>>
-    where
-        T: Serialize,
+        where
+            T: Serialize,
     {
         let resp = client
             .put(&url)
@@ -54,8 +53,10 @@ impl DnsProvider for  GoDaddyAPI {
             .await?;
         Ok(resp)
     }
-    async fn put_sub_domain(&self, record: &Record) -> () {
-    }
+}
+
+impl DnsProvider for  GoDaddyAPI {
+
 
     async fn set_sub_domain(&self, record: &Record) -> () {
 
