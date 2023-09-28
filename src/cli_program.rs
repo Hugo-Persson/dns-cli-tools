@@ -7,6 +7,7 @@ use crate::{
     godaddy_api::GoDaddyAPI,
 };
 use reqwest;
+use crate::dns_provider::DnsProvider;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None, arg_required_else_help = true)]
@@ -112,7 +113,7 @@ impl CLIProgram {
 
         for record in &config.records {
             println!("Updating record: {:?}", record);
-            api.put_sub_domain(record).await;
+            api.set_sub_domain(record).await;
         }
     }
 

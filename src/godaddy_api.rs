@@ -3,6 +3,7 @@ use std::error::Error;
 use reqwest::Client;
 use serde::Serialize;
 use serde_json::json;
+use crate::dns_provider::DnsProvider;
 
 use crate::config::Record;
 
@@ -15,7 +16,7 @@ pub struct GoDaddyAPI {
     debug: bool,
 }
 
-impl GoDaddyAPI {
+impl DnsProvider for  GoDaddyAPI {
     pub fn new(
         api_key: String,
         secret: String,
@@ -53,7 +54,11 @@ impl GoDaddyAPI {
             .await?;
         Ok(resp)
     }
-    pub async fn put_sub_domain(&self, record: &Record) -> () {
+    async fn put_sub_domain(&self, record: &Record) -> () {
+    }
+
+    async fn set_sub_domain(&self, record: &Record) -> () {
+
         let url = format!(
             "https://api.godaddy.com/v1/domains/{}/records/{}/{}",
             self.domain,
@@ -74,5 +79,9 @@ impl GoDaddyAPI {
         } else {
             println!("The subdomain {} has been registered", record.name);
         }
+    }
+
+    async fn remove_sub_domain(&self, record: &Record) -> () {
+        todo!("Implement this")
     }
 }
