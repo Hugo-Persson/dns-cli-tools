@@ -35,12 +35,14 @@ pub struct Cli {
 #[derive(Subcommand, PartialEq)]
 enum Commands {
 
+    /// Commands for interacting with the godaddy api
     #[command(subcommand)]
     Godaddy(DomainCommands),
 
     /// Creates a new config file at the configured config path or default path.
     Init {},
 
+    /// Commands for interacting with discord webhooks
     #[command(subcommand)]
     Discord(WebhookCommands),
 
