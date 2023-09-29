@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
-use crate::discord_webhook::DiscordWebhook;
-use crate::webhook_notifier::{WebhookNotifier, WebhookNotifierType};
+
+use crate::webhook_notifier::{WebhookNotifierType};
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {

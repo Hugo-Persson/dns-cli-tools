@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 
 use crate::dns_provider::DnsProvider;
-use crate::{config::{Config, Record, RecordType}, config, godaddy_api::GoDaddyAPI};
-use reqwest;
+use crate::{config::{Config, Record, RecordType}};
+
 use crate::ip_handler::{get_current_ip, get_last_ip, save_ip};
 use crate::webhook_notifier::WebhookNotifier;
 use crate::webhook_notifier::WebhookNotifierType::DiscordWebhook;
@@ -58,7 +58,7 @@ impl<T> CLIProgram<T> where T: DnsProvider {
 
     pub(crate) async fn register_sub_domain(&mut self, prefix: &String) -> () {
             println!("Registering subdomain {}.{} ...", prefix, &self.config.domain);
-            &self.api.set_sub_domain(&Record {
+            self.api.set_sub_domain(&Record {
                 name: prefix.to_string(),
                 record_type: RecordType::A,
             })

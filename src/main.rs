@@ -34,6 +34,21 @@ pub struct Cli {
 
 #[derive(Subcommand, PartialEq)]
 enum Commands {
+
+    #[command(subcommand)]
+    Godaddy(DomainCommands),
+
+    /// Creates a new config file at the configured config path or default path.
+    Init {},
+
+    #[command(subcommand)]
+    Discord(WebhookCommands),
+
+}
+
+#[derive(Subcommand, PartialEq)]
+enum DomainCommands{
+
     /// Checks if IP has changed and if it has changed updates all the DNS entries tied to this server
     Check {
         /// Forces the update of the records even if the IP has not changed
@@ -45,8 +60,6 @@ enum Commands {
         /// The prefix will the domain will become this arg.example.org
         prefix: String,
     },
-    /// Creates a new config file at the configured config path or default path.
-    Init {},
 
     /// Lists all the subdomains and their record types that are being tracked
     Ls {},
@@ -56,10 +69,6 @@ enum Commands {
         /// The prefix of the subdomain that should be deleted
         prefix: String,
     },
-
-    #[command(subcommand)]
-    Discord(WebhookCommands),
-
 }
 
 #[derive(Subcommand, PartialEq)]
@@ -83,26 +92,22 @@ enum WebhookCommands{
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
-    if Some(Commands::Init {}) == cli.command {
-        init(cli.config).await;
-        return;
-    }
     let path = Config::get_config_path(cli.config.clone());
     let config = Config::get_config(&path).unwrap();
-    let api = GoDaddyAPI::new(
-        config.api_key.clone(),
-        config.secret.clone(),
-        config.domain.clone(),
-        get_current_ip().await,
-        cli.debug > 0,
-    );
-    let mut program = CLIProgram::new(api, cli.debug>0, cli.config.clone(), config);
+
     match cli.command {
-        Some(Commands::Check { force }) => program.check_for_new_ip(force.to_owned()).await,
-        Some(Commands::Ls {}) => program.ls(),
-        Some(Commands::Register { prefix }) => program.register_sub_domain(&prefix).await,
-        Some(Commands::Init {}) => (), // Handled before
-        Some(Commands::Rm { prefix: _ }) => println!("Not implemented yet"),
+        Commands::Init {} => init(cli.config).await,
+        Commands::Godaddy(cmd) => {
+            let api = GoDaddyAPI::new(
+                config.api_key.clone(),
+                config.secret.clone(),
+                config.domain.clone(),
+                get_current_ip().await,
+                cli.debug > 0,
+            );
+            let program = CLIProgram::new(api, cli.debug>0, cli.config.clone(), config);
+            handle_domain_command(cmd, program).await;
+        }
         Some(Commands::Discord(cmd)) => {
             match cmd {
                 WebhookCommands::Add { url } => {
@@ -124,6 +129,16 @@ async fn main() {
         None => {
             println!("Nothing")
         }
+    }
+}
+
+async fn handle_domain_command<T>(cmd: DomainCommands, mut program: CLIProgram<T>) -> () {
+    match cmd{
+
+        DomainCommands::Check { force } => program.check_for_new_ip(force.to_owned()).await,
+        DomainCommands::Ls {} => program.ls(),
+        DomainCommands::Register { prefix } => program.register_sub_domain(&prefix).await,
+        DomainCommands::Rm { prefix: _ } => println!("Not implemented yet"),
     }
 }
 

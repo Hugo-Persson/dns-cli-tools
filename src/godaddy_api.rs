@@ -83,7 +83,7 @@ impl DnsProvider for  GoDaddyAPI {
         }
     }
 
-    async fn remove_sub_domain(&self, record: &Record) -> () {
+    async fn remove_sub_domain(&self, _record: &Record) -> () {
         todo!("Implement this")
     }
 

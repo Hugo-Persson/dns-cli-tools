@@ -27,7 +27,6 @@ impl WebhookNotifier for DiscordWebhook{
             }))
             .send()
             .await;
-        println!("DiscordWebhook::change_ip resp: {:?}", resp);
 
     }
 }
