@@ -55,6 +55,7 @@ impl GoDaddyAPI{
     }
 }
 
+
 impl DnsProvider for  GoDaddyAPI {
 
 
@@ -84,5 +85,16 @@ impl DnsProvider for  GoDaddyAPI {
 
     async fn remove_sub_domain(&self, record: &Record) -> () {
         todo!("Implement this")
+    }
+
+    fn change_ip(&self, ip: &String) -> Self {
+       GoDaddyAPI{
+            api_key: self.api_key.clone(),
+            secret: self.secret.clone(),
+            domain: self.domain.clone(),
+            ip: ip.clone(),
+            client: Client::new(),
+            debug: self.debug,
+       }
     }
 }
