@@ -68,3 +68,7 @@ The program keeps track of last IP in a file located at `~/.lastip`
 
 1. Navigate to: https://developer.godaddy.com/keys
 2. Create new `Production` key
+
+# Cloudflare
+
+- Zone isa domain

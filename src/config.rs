@@ -1,29 +1,31 @@
-use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
-use crate::webhook_notifier::{WebhookNotifierType};
+use crate::webhook_notifier::WebhookNotifierType;
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
-
-    pub records: Vec<Record>,
-    pub domain: String,
     pub api_key: String,
     pub secret: String,
+    pub domains: Vec<Domain>,
 
     #[serde(default)]
     pub webhooks: Vec<WebhookNotifierType>,
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Domain {
+    pub records: Vec<Record>,
+    pub domain: String,
+}
 
-
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Record {
     pub name: String,
     pub record_type: RecordType,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum RecordType {
     A,
     AAA,
@@ -38,26 +40,27 @@ impl RecordType {
     }
 }
 
-impl Config{
-    pub(crate) fn add_webhook(&mut self, webhook: WebhookNotifierType) -> () {
+impl Config {
+    pub(crate) fn add_webhook(&mut self, webhook: WebhookNotifierType) {
         self.webhooks.push(webhook);
     }
 
-    pub(crate) fn get_default_config() -> Config{
-
+    pub(crate) fn get_default_config() -> Config {
         Config {
-            records: vec![Record {
-                name: "sub".to_string(),
-                record_type: RecordType::A,
+            domains: vec![Domain {
+                records: vec![Record {
+                    name: "sub".to_string(),
+                    record_type: RecordType::A,
+                }],
+                domain: "example.com".to_string(),
             }],
-            domain: "example.com".to_string(),
             api_key: "replace_with_your_api_key".to_string(),
             secret: "replace_with_your_secret".to_string(),
             webhooks: vec![],
         }
     }
 
-    pub fn write(&self, path: &PathBuf){
+    pub fn write(&self, path: &PathBuf) {
         let config_json = serde_json::to_string_pretty(&self).unwrap();
         std::fs::write(path, config_json).unwrap();
     }
@@ -83,3 +86,4 @@ impl Config{
         )
     }
 }
+

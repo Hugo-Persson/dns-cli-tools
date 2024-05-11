@@ -1,21 +1,21 @@
-#![feature(async_fn_in_trait)]
-
-use std::path::PathBuf;
-use clap::{Parser, Subcommand};
-use cli_program::CLIProgram;
 use crate::config::Config;
 use crate::discord_webhook::DiscordWebhook;
 use crate::godaddy_api::GoDaddyAPI;
 use crate::ip_handler::get_current_ip;
 use crate::webhook_notifier::WebhookNotifierType;
+use clap::{Parser, Subcommand};
+use cli_program::CLIProgram;
+use dns_provider::DnsProvider;
+use std::path::PathBuf;
 
 mod cli_program;
+mod cloudflare_provider;
 mod config;
-mod godaddy_api;
-mod dns_provider;
 mod discord_webhook;
-mod webhook_notifier;
+mod dns_provider;
+mod godaddy_api;
 mod ip_handler;
+mod webhook_notifier;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None, arg_required_else_help = true)]
@@ -34,10 +34,12 @@ pub struct Cli {
 
 #[derive(Subcommand, PartialEq)]
 enum Commands {
-
     /// Commands for interacting with the godaddy api
     #[command(subcommand)]
     Godaddy(DomainCommands),
+
+    #[command(subcommand)]
+    Cloudflare(DomainCommands),
 
     /// Creates a new config file at the configured config path or default path.
     Init {},
@@ -45,12 +47,10 @@ enum Commands {
     /// Commands for interacting with discord webhooks
     #[command(subcommand)]
     Discord(WebhookCommands),
-
 }
 
 #[derive(Subcommand, PartialEq)]
-enum DomainCommands{
-
+enum DomainCommands {
     /// Checks if IP has changed and if it has changed updates all the DNS entries tied to this server
     Check {
         /// Forces the update of the records even if the IP has not changed
@@ -74,7 +74,7 @@ enum DomainCommands{
 }
 
 #[derive(Subcommand, PartialEq)]
-enum WebhookCommands{
+enum WebhookCommands {
     /// Adds a new discord webhook to the config file
     Add {
         /// The url of the discord webhook
@@ -90,53 +90,56 @@ enum WebhookCommands{
     Ls {},
 }
 
-
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
     let path = Config::get_config_path(cli.config.clone());
+    let command = cli.command.expect("No command provided");
+    if (command == Commands::Init {}) {
+        init(cli.config).await;
+        return;
+    }
     let config = Config::get_config(&path).unwrap();
 
-    match cli.command {
+    match command {
         Commands::Init {} => init(cli.config).await,
         Commands::Godaddy(cmd) => {
-            let api = GoDaddyAPI::new(
-                config.api_key.clone(),
-                config.secret.clone(),
-                config.domain.clone(),
-                get_current_ip().await,
-                cli.debug > 0,
-            );
-            let program = CLIProgram::new(api, cli.debug>0, cli.config.clone(), config);
+            // let api = GoDaddyAPI::new(
+            //     config.api_key.clone(),
+            //     config.secret.clone(),
+            //     config.domain.clone(),
+            //     get_current_ip().await,
+            //     cli.debug > 0,
+            // );
+            // let program = CLIProgram::new(api, cli.debug > 0, cli.config.clone(), config);
+            // handle_domain_command(cmd, program).await;
+        }
+        Commands::Cloudflare(cmd) => {
+            let api = cloudflare_provider::CloudflareProvider::new(config.api_key.clone());
+            let program = CLIProgram::new(api, cli.debug > 0, cli.config.clone(), config);
             handle_domain_command(cmd, program).await;
         }
-        Some(Commands::Discord(cmd)) => {
-            match cmd {
-                WebhookCommands::Add { url } => {
-                    println!("Adding webhook: {}", url);
-                    let discord_webhook = DiscordWebhook::new(url.to_string());
-                    let config_path = Config::get_config_path(cli.config.clone());
-                    let mut config = Config::get_config(&config_path).unwrap();
-                    config.add_webhook(WebhookNotifierType::DiscordWebhook(discord_webhook));
-                    config.write(&config_path);
-                }
-                WebhookCommands::Rm { url } => {
-                    println!("Removing webhook: {}", url);
-                }
-                WebhookCommands::Ls {} => {
-                    println!("Listing webhooks");
-                }
+        Commands::Discord(cmd) => match cmd {
+            WebhookCommands::Add { url } => {
+                println!("Adding webhook: {}", url);
+                let discord_webhook = DiscordWebhook::new(url.to_string());
+                let config_path = Config::get_config_path(cli.config.clone());
+                let mut config = Config::get_config(&config_path).unwrap();
+                config.add_webhook(WebhookNotifierType::DiscordWebhook(discord_webhook));
+                config.write(&config_path);
             }
-        }
-        None => {
-            println!("Nothing")
-        }
-    }
+            WebhookCommands::Rm { url } => {
+                println!("Removing webhook: {}", url);
+            }
+            WebhookCommands::Ls {} => {
+                println!("Listing webhooks");
+            }
+        },
+    };
 }
 
-async fn handle_domain_command<T>(cmd: DomainCommands, mut program: CLIProgram<T>) -> () {
-    match cmd{
-
+async fn handle_domain_command<T: DnsProvider>(cmd: DomainCommands, mut program: CLIProgram<T>) {
+    match cmd {
         DomainCommands::Check { force } => program.check_for_new_ip(force.to_owned()).await,
         DomainCommands::Ls {} => program.ls(),
         DomainCommands::Register { prefix } => program.register_sub_domain(&prefix).await,
@@ -144,7 +147,7 @@ async fn handle_domain_command<T>(cmd: DomainCommands, mut program: CLIProgram<T
     }
 }
 
-async fn init(path: Option<PathBuf>){
+async fn init(path: Option<PathBuf>) {
     let path = Config::get_config_path(path);
     if path.exists() {
         panic!(
