@@ -6,5 +6,5 @@ pub trait DnsProvider {
     async fn remove_sub_domain(&self, record: &Record);
 
     fn change_ip(&self, ip: &String) -> Self;
+    async fn import(&mut self);
 }
-

@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::config::{Config, Domain, Record, RecordType};
+use crate::config::{Config, Record, RecordType, CONFIG_SINGLETON};
 use crate::dns_provider::DnsProvider;
 
 use crate::ip_handler::{get_current_ip, get_last_ip, save_ip};
@@ -57,17 +57,16 @@ where
             save_ip(&current_ip).await;
         }
     }
-    fn get_domain(&mut self) -> &mut Domain {
-        &mut self.config.domains[self.domain_index]
-    }
 
     async fn update_records(&self, new_ip: &String) {
         println!("Updating records...");
         let api = self.api.change_ip(&new_ip);
 
-        for record in &self.config.domains[self.domain_index].records {
-            println!("Updating record: {:?}", record);
-            api.set_sub_domain(record).await;
+        for (_, domain) in &self.config.cloudflare_config.domains {
+            for record in &domain.records {
+                println!("Updating record: {:?}", record);
+                api.set_sub_domain(record).await;
+            }
         }
     }
 
@@ -79,18 +78,24 @@ where
                 record_type: RecordType::A,
             })
             .await;
+        let domains = self.config.cloudflare_config.domains.clone();
 
-        self.get_domain().records.push(Record {
-            name: prefix.to_owned(),
-            record_type: RecordType::A,
-        });
-
-        let path = Config::get_config_path(self.custom_path.clone());
-        self.config.write(&path);
+        let key = domains.keys().next().unwrap();
+        self.config
+            .cloudflare_config
+            .domains
+            .get_mut(key)
+            .unwrap()
+            .records
+            .push(Record {
+                name: prefix.to_owned(),
+                record_type: RecordType::A,
+            });
+        CONFIG_SINGLETON.lock().await.save(self.config.clone())
     }
 
     pub fn ls(&self) {
-        for domain in &self.config.domains {
+        for (_, domain) in &self.config.cloudflare_config.domains {
             for record in &domain.records {
                 println!(
                     "{}.{} - {}",
@@ -100,6 +105,10 @@ where
                 );
             }
         }
+    }
+
+    pub async fn import(&mut self) {
+        self.api.import().await;
     }
 }
 

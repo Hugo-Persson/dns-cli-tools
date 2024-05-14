@@ -5,6 +5,7 @@ use crate::ip_handler::get_current_ip;
 use crate::webhook_notifier::WebhookNotifierType;
 use clap::{Parser, Subcommand};
 use cli_program::CLIProgram;
+use config::CONFIG_SINGLETON;
 use dns_provider::DnsProvider;
 use std::path::PathBuf;
 
@@ -71,6 +72,8 @@ enum DomainCommands {
         /// The prefix of the subdomain that should be deleted
         prefix: String,
     },
+    /// Imports entries that have the same ip as the current ip
+    Import {},
 }
 
 #[derive(Subcommand, PartialEq)]
@@ -99,7 +102,8 @@ async fn main() {
         init(cli.config).await;
         return;
     }
-    let config = Config::get_config(&path).unwrap();
+    CONFIG_SINGLETON.lock().await.init(path);
+    let config = CONFIG_SINGLETON.lock().await.get();
 
     match command {
         Commands::Init {} => init(cli.config).await,
@@ -115,10 +119,11 @@ async fn main() {
             // handle_domain_command(cmd, program).await;
         }
         Commands::Cloudflare(cmd) => {
-            let api = cloudflare_provider::CloudflareProvider::new(config.api_key.clone());
+            let api = cloudflare_provider::CloudflareProvider::new().await;
             let program = CLIProgram::new(api, cli.debug > 0, cli.config.clone(), config);
             handle_domain_command(cmd, program).await;
         }
+
         Commands::Discord(cmd) => match cmd {
             WebhookCommands::Add { url } => {
                 println!("Adding webhook: {}", url);
@@ -144,6 +149,7 @@ async fn handle_domain_command<T: DnsProvider>(cmd: DomainCommands, mut program:
         DomainCommands::Ls {} => program.ls(),
         DomainCommands::Register { prefix } => program.register_sub_domain(&prefix).await,
         DomainCommands::Rm { prefix: _ } => println!("Not implemented yet"),
+        DomainCommands::Import {} => program.import().await,
     }
 }
 

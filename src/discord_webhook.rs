@@ -1,22 +1,20 @@
+use crate::webhook_notifier::WebhookNotifier;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use crate::webhook_notifier::WebhookNotifier;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DiscordWebhook {
     url: String,
 }
 
-impl DiscordWebhook{
+impl DiscordWebhook {
     pub fn new(url: String) -> DiscordWebhook {
-        DiscordWebhook {
-            url,
-        }
+        DiscordWebhook { url }
     }
 }
 
-impl WebhookNotifier for DiscordWebhook{
+impl WebhookNotifier for DiscordWebhook {
     async fn change_ip(&self, from: &String, to: &String) -> () {
         println!("DiscordWebhook::change_ip from: {}, to: {}", from, to);
         let client = Client::new();
@@ -27,6 +25,5 @@ impl WebhookNotifier for DiscordWebhook{
             }))
             .send()
             .await;
-
     }
 }

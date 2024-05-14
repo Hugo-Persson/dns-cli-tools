@@ -1,9 +1,9 @@
 use std::error::Error;
 
+use crate::dns_provider::DnsProvider;
 use reqwest::Client;
 use serde::Serialize;
 use serde_json::json;
-use crate::dns_provider::DnsProvider;
 
 use crate::config::Record;
 
@@ -15,7 +15,7 @@ pub struct GoDaddyAPI {
     client: Client,
     debug: bool,
 }
-impl GoDaddyAPI{
+impl GoDaddyAPI {
     pub fn new(
         api_key: String,
         secret: String,
@@ -40,8 +40,8 @@ impl GoDaddyAPI{
         api_key: &String,
         secret: &String,
     ) -> Result<String, Box<dyn Error>>
-        where
-            T: Serialize,
+    where
+        T: Serialize,
     {
         let resp = client
             .put(&url)
@@ -55,12 +55,8 @@ impl GoDaddyAPI{
     }
 }
 
-
-impl DnsProvider for  GoDaddyAPI {
-
-
+impl DnsProvider for GoDaddyAPI {
     async fn set_sub_domain(&self, record: &Record) -> () {
-
         let url = format!(
             "https://api.godaddy.com/v1/domains/{}/records/{}/{}",
             self.domain,
@@ -88,13 +84,17 @@ impl DnsProvider for  GoDaddyAPI {
     }
 
     fn change_ip(&self, ip: &String) -> Self {
-       GoDaddyAPI{
+        GoDaddyAPI {
             api_key: self.api_key.clone(),
             secret: self.secret.clone(),
             domain: self.domain.clone(),
             ip: ip.clone(),
             client: Client::new(),
             debug: self.debug,
-       }
+        }
+    }
+
+    async fn import(&mut self) {
+        todo!()
     }
 }
