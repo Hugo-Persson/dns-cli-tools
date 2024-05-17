@@ -35,6 +35,9 @@ pub struct Cli {
 
 #[derive(Subcommand, PartialEq)]
 enum Commands {
+    /// Prints the current config
+    PrintConfig {},
+
     /// Commands for interacting with the godaddy api
     #[command(subcommand)]
     Godaddy(DomainCommands),
@@ -106,6 +109,9 @@ async fn main() {
     let config = CONFIG_SINGLETON.lock().await.get();
 
     match command {
+        Commands::PrintConfig {} => {
+            println!("{:#?}", config);
+        }
         Commands::Init {} => init(cli.config).await,
         Commands::Godaddy(cmd) => {
             // let api = GoDaddyAPI::new(

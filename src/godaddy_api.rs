@@ -56,7 +56,7 @@ impl GoDaddyAPI {
 }
 
 impl DnsProvider for GoDaddyAPI {
-    async fn set_sub_domain(&self, record: &Record) -> () {
+    async fn set_sub_domain(&self, record: &Record) -> String {
         let url = format!(
             "https://api.godaddy.com/v1/domains/{}/records/{}/{}",
             self.domain,
@@ -74,8 +74,10 @@ impl DnsProvider for GoDaddyAPI {
             );
         } else if self.debug {
             println!("Ok, Response: {:?}", resp);
+            return "".to_string();
         } else {
             println!("The subdomain {} has been registered", record.name);
+            return "".to_string();
         }
     }
 

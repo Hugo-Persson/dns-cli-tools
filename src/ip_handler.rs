@@ -12,6 +12,7 @@ pub fn get_last_ip(debug: bool) -> String {
 }
 
 pub async fn get_current_ip() -> String {
+    return "78.71.54.77".to_string();
     reqwest::get("https://api.ipify.org")
         .await
         .unwrap()
@@ -26,3 +27,4 @@ pub async fn save_ip(ip: &String) {
     let path = home.join(".last_ip.txt");
     std::fs::write(path, ip).unwrap();
 }
+

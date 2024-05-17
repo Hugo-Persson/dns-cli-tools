@@ -7,7 +7,7 @@ use tokio::sync::Mutex;
 
 use crate::webhook_notifier::WebhookNotifierType;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Config {
     pub cloudflare_config: CloudflareConfig,
 
@@ -15,12 +15,12 @@ pub struct Config {
     pub webhooks: Vec<WebhookNotifierType>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CloudflareConfig {
     pub api_token: String,
     pub domains: HashMap<String, Domain>,
 }
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Domain {
     pub records: Vec<Record>,
     pub domain: String,
@@ -28,6 +28,7 @@ pub struct Domain {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Record {
+    pub id: String,
     pub name: String,
     pub record_type: RecordType,
 }

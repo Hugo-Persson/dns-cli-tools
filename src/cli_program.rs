@@ -72,8 +72,10 @@ where
 
     pub(crate) async fn register_sub_domain(&mut self, prefix: &String) {
         println!("Registering subdomain {}...", prefix);
-        self.api
+        let id = self
+            .api
             .set_sub_domain(&Record {
+                id: "".to_string(),
                 name: prefix.to_string(),
                 record_type: RecordType::A,
             })
@@ -88,6 +90,7 @@ where
             .unwrap()
             .records
             .push(Record {
+                id,
                 name: prefix.to_owned(),
                 record_type: RecordType::A,
             });
