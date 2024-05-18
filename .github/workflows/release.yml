@@ -1,19 +1,21 @@
 # https://dzfrias.dev/blog/deploy-rust-cross-platform-github-actions/
-
+# https://reemus.dev/tldr/rust-cross-compilation-github-actions
 name: Deploy
 
 on:
   push:
     tags:
       - "[0-9]+.[0-9]+.[0-9]+"
-
+env:
+  # The project name specified in your Cargo.toml
+  PROJECT_NAME: dns-cli
 permissions:
   contents: write
 
 jobs:
-  build-and-upload:
-    name: Build and upload
-    runs-on: ${{ matrix.os }}
+  build:
+    # Set the job to run on the platform specified by the matrix below
+    runs-on: ${{ matrix.runner }}
 
     strategy:
       matrix:
