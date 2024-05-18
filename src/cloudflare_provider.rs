@@ -86,7 +86,7 @@ impl CloudflareProvider {
             .iter()
             .for_each(|zone| {
                 if let Some(domain) = self.config.cloudflare_config.domains.get_mut(&zone.id) {
-                    domain.domain = zone.name.clone();
+                    domain.domain.clone_from(&zone.name);
                 } else {
                     let ans = Confirm::new(
                         format!("Do you want to add the domain: {}", zone.name).as_str(),
@@ -108,7 +108,7 @@ impl CloudflareProvider {
         CONFIG_SINGLETON.lock().await.save(self.config.clone());
     }
 
-    async fn update_ip(&self, ip: &String, record: &Record, zone_id: String) {
+    async fn update_ip(&self, ip: &str, record: &Record, zone_id: String) {
         let url = format!(
             "{}/zones/{}/dns_records/{}",
             CLOUDFLARE_API_URL, zone_id, record.id
@@ -197,7 +197,7 @@ impl DnsProvider for CloudflareProvider {
         println!("{:#?}", text_response);
     }
 
-    async fn change_ip(&self, ip: &String) {
+    async fn change_ip(&self, ip: &str) {
         for (id, domain) in self.config.cloudflare_config.domains.iter() {
             for record in domain.records.iter() {
                 self.update_ip(ip, record, id.clone()).await;

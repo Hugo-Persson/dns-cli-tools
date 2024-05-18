@@ -89,7 +89,7 @@ impl DnsProvider for GoDaddyAPI {
         todo!()
     }
 
-    async fn change_ip(&self, ip: &String) {
+    async fn change_ip(&self, ip: &str) {
         todo!()
     }
 }

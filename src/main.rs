@@ -111,7 +111,7 @@ async fn main() {
             println!("{:#?}", config);
         }
         Commands::Init {} => init(cli.config).await,
-        Commands::Godaddy(cmd) => {
+        Commands::Godaddy(_) => {
             // let api = GoDaddyAPI::new(
             //     config.api_key.clone(),
             //     config.secret.clone(),
@@ -124,7 +124,7 @@ async fn main() {
         }
         Commands::Cloudflare(cmd) => {
             let api = cloudflare_provider::CloudflareProvider::new().await;
-            let program = CLIProgram::new(api, cli.debug > 0, cli.config.clone(), config);
+            let program = CLIProgram::new(api, cli.debug > 0, config);
             handle_domain_command(cmd, program).await;
         }
 
@@ -152,7 +152,7 @@ async fn handle_domain_command<T: DnsProvider>(cmd: DomainCommands, mut program:
         DomainCommands::Check { force } => program.check_for_new_ip(force.to_owned()).await,
         DomainCommands::Ls {} => program.ls(),
         DomainCommands::Register { prefix } => program.register_sub_domain(prefix).await,
-        DomainCommands::Rm { prefix: _ } => println!("Not implemented yet"),
+        DomainCommands::Rm { prefix } => program.remove_sub_domain(prefix).await,
         DomainCommands::Import {} => program.import().await,
     }
 }
