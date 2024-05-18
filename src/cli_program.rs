@@ -60,25 +60,41 @@ where
 
     async fn update_records(&self, new_ip: &String) {
         println!("Updating records...");
-        let api = self.api.change_ip(&new_ip);
-
-        for (_, domain) in &self.config.cloudflare_config.domains {
-            for record in &domain.records {
-                println!("Updating record: {:?}", record);
-                api.set_sub_domain(record).await;
-            }
-        }
+        //let api = self.api.change_ip(&new_ip).await;
+        //
+        //for (zone_id, domain) in &self.config.cloudflare_config.domains {
+        //    for record in &domain.records {
+        //        println!("Updating record: {:?}", record);
+        //        api.set_sub_domain(record, zone_id.to_owned()).await;
+        //    }
+        //}
     }
 
-    pub(crate) async fn register_sub_domain(&mut self, prefix: &String) {
-        println!("Registering subdomain {}...", prefix);
+    pub(crate) async fn register_sub_domain(&mut self, domain: String) {
+        let domain_chunks = domain.split(".").collect::<Vec<&str>>();
+        let zone_name = format!("{}.{}", domain_chunks[1], domain_chunks[2]); // TODO:
+                                                                              // Support for more than 3 chunks
+        println!(
+            "Registering subdomain {} for {}",
+            domain_chunks[0], zone_name
+        );
+        let zone_id = self
+            .config
+            .cloudflare_config
+            .domains
+            .iter()
+            .find(|e| e.1.domain == zone_name)
+            .expect("Domain not found");
         let id = self
             .api
-            .set_sub_domain(&Record {
-                id: "".to_string(),
-                name: prefix.to_string(),
-                record_type: RecordType::A,
-            })
+            .set_sub_domain(
+                &Record {
+                    id: "".to_string(),
+                    name: domain.to_string(),
+                    record_type: RecordType::A,
+                },
+                zone_id.0.to_owned(),
+            )
             .await;
         let domains = self.config.cloudflare_config.domains.clone();
 
@@ -91,7 +107,7 @@ where
             .records
             .push(Record {
                 id,
-                name: prefix.to_owned(),
+                name: domain.to_owned(),
                 record_type: RecordType::A,
             });
         CONFIG_SINGLETON.lock().await.save(self.config.clone())

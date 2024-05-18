@@ -1,7 +1,3 @@
-use std::collections::{HashMap, HashSet};
-use std::future::Future;
-use std::path::PathBuf;
-
 use inquire::{prompt_text, Confirm};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -11,11 +7,11 @@ use crate::config::{Config, Domain, Record, CONFIG_SINGLETON};
 use crate::dns_provider::DnsProvider;
 use crate::ip_handler::get_current_ip;
 
-use serde_json::Value;
+use serde_json::{json, Value};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ZoneResponse {
-    pub result: Vec<Zone>,
+    pub result: Option<Vec<Zone>>,
     pub success: bool,
     pub errors: Vec<Value>,
     pub messages: Vec<Value>,
@@ -30,7 +26,7 @@ pub struct Zone {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DNSListResponse {
-    pub result: Vec<DnsRecord>,
+    pub result: Option<Vec<DnsRecord>>,
     pub success: bool,
     pub errors: Vec<Value>,
     pub messages: Vec<Value>,
@@ -84,40 +80,129 @@ impl CloudflareProvider {
             .json()
             .await
             .unwrap();
-        response.result.iter().for_each(|zone| {
-            if let Some(domain) = self.config.cloudflare_config.domains.get_mut(&zone.id) {
-                domain.domain = zone.name.clone();
-            } else {
-                let ans =
-                    Confirm::new(format!("Do you want to add the domain: {}", zone.name).as_str())
-                        .with_default(false)
-                        .prompt();
-                if let Ok(true) = ans {
-                    println!("Added domain: {}", zone.name);
-                    self.config.cloudflare_config.domains.insert(
-                        zone.id.clone(),
-                        Domain {
-                            domain: zone.name.clone(),
-                            records: vec![],
-                        },
-                    );
+        response
+            .result
+            .expect("DNS result list null")
+            .iter()
+            .for_each(|zone| {
+                if let Some(domain) = self.config.cloudflare_config.domains.get_mut(&zone.id) {
+                    domain.domain = zone.name.clone();
+                } else {
+                    let ans = Confirm::new(
+                        format!("Do you want to add the domain: {}", zone.name).as_str(),
+                    )
+                    .with_default(false)
+                    .prompt();
+                    if let Ok(true) = ans {
+                        println!("Added domain: {}", zone.name);
+                        self.config.cloudflare_config.domains.insert(
+                            zone.id.clone(),
+                            Domain {
+                                domain: zone.name.clone(),
+                                records: vec![],
+                            },
+                        );
+                    }
                 }
-            }
-        });
+            });
         CONFIG_SINGLETON.lock().await.save(self.config.clone());
+    }
+
+    async fn update_ip(&self, ip: &String, record: &Record, zone_id: String) {
+        let url = format!(
+            "{}/zones/{}/dns_records/{}",
+            CLOUDFLARE_API_URL, zone_id, record.id
+        );
+        let body = json!({
+        "type": "A",
+        "name": record.name,
+        "content": ip,
+        });
+        let text_response = self
+            .client
+            .put(url)
+            .header(
+                reqwest::header::AUTHORIZATION,
+                format!("Bearer {}", self.config.cloudflare_config.api_token),
+            )
+            .json(&body)
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        println!("{:#?}", text_response);
     }
 }
 impl DnsProvider for CloudflareProvider {
-    async fn set_sub_domain(&self, record: &crate::config::Record) -> String {
-        todo!()
+    async fn set_sub_domain(&self, record: &crate::config::Record, id: String) -> String {
+        let url = format!("{}/zones/{}/dns_records", CLOUDFLARE_API_URL, id);
+        let ip = get_current_ip().await;
+        let body = json!({
+        "type": "A",
+        "name": record.name,
+        "proxied": true,
+        "content": ip,
+        });
+        let text_response = self
+            .client
+            .post(url)
+            .header(
+                reqwest::header::AUTHORIZATION,
+                format!("Bearer {}", self.config.cloudflare_config.api_token),
+            )
+            .json(&body)
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        //println!("{:#?}", text_response);
+        let response: DNSListResponse = serde_json::from_str(&text_response).unwrap();
+        if response.success {
+            response.result.unwrap()[0].id.clone()
+        } else {
+            print!("{}", text_response);
+            panic!("Error: {:#?}", response.errors)
+        }
     }
 
-    async fn remove_sub_domain(&self, record: &crate::config::Record) {
-        todo!()
+    async fn remove_sub_domain(&self, record: &crate::config::Record, zone_id: String) {
+        let url = format!(
+            "{}/zones/{}/dns_records/{}",
+            CLOUDFLARE_API_URL, zone_id, record.id
+        );
+        let ip = get_current_ip().await;
+        let body = json!({
+        "type": "A",
+        "name": record.name,
+        "content": ip,
+        });
+        let text_response = self
+            .client
+            .delete(url)
+            .header(
+                reqwest::header::AUTHORIZATION,
+                format!("Bearer {}", self.config.cloudflare_config.api_token),
+            )
+            .json(&body)
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        println!("{:#?}", text_response);
     }
 
-    fn change_ip(&self, ip: &String) -> Self {
-        todo!()
+    async fn change_ip(&self, ip: &String) {
+        for (id, domain) in self.config.cloudflare_config.domains.iter() {
+            for record in domain.records.iter() {
+                self.update_ip(ip, record, id.clone()).await;
+            }
+        }
     }
 
     async fn import(&mut self) {
@@ -140,9 +225,12 @@ impl DnsProvider for CloudflareProvider {
                 .json()
                 .await
                 .unwrap();
-            for record in response.result.iter() {
-                println!("Importing {}.{} ", record.name, domain.domain);
+            for record in response.result.expect("Results missing").iter() {
+                if domain.records.iter().any(|r| r.id == record.id) {
+                    continue;
+                }
                 if record.type_field == "A" {
+                    println!("Importing {}.{} ", record.name, domain.domain);
                     domain.records.push(Record {
                         name: record.name.clone(),
                         id: record.id.clone(),

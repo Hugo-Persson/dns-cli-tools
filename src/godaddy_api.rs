@@ -56,7 +56,7 @@ impl GoDaddyAPI {
 }
 
 impl DnsProvider for GoDaddyAPI {
-    async fn set_sub_domain(&self, record: &Record) -> String {
+    async fn set_sub_domain(&self, record: &Record, zone_id: String) -> String {
         let url = format!(
             "https://api.godaddy.com/v1/domains/{}/records/{}/{}",
             self.domain,
@@ -81,22 +81,15 @@ impl DnsProvider for GoDaddyAPI {
         }
     }
 
-    async fn remove_sub_domain(&self, _record: &Record) -> () {
-        todo!("Implement this")
-    }
-
-    fn change_ip(&self, ip: &String) -> Self {
-        GoDaddyAPI {
-            api_key: self.api_key.clone(),
-            secret: self.secret.clone(),
-            domain: self.domain.clone(),
-            ip: ip.clone(),
-            client: Client::new(),
-            debug: self.debug,
-        }
-    }
-
     async fn import(&mut self) {
+        todo!()
+    }
+
+    async fn remove_sub_domain(&self, record: &Record, zone_id: String) {
+        todo!()
+    }
+
+    async fn change_ip(&self, ip: &String) {
         todo!()
     }
 }

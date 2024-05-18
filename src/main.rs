@@ -1,7 +1,5 @@
 use crate::config::Config;
 use crate::discord_webhook::DiscordWebhook;
-use crate::godaddy_api::GoDaddyAPI;
-use crate::ip_handler::get_current_ip;
 use crate::webhook_notifier::WebhookNotifierType;
 use clap::{Parser, Subcommand};
 use cli_program::CLIProgram;
@@ -153,7 +151,7 @@ async fn handle_domain_command<T: DnsProvider>(cmd: DomainCommands, mut program:
     match cmd {
         DomainCommands::Check { force } => program.check_for_new_ip(force.to_owned()).await,
         DomainCommands::Ls {} => program.ls(),
-        DomainCommands::Register { prefix } => program.register_sub_domain(&prefix).await,
+        DomainCommands::Register { prefix } => program.register_sub_domain(prefix).await,
         DomainCommands::Rm { prefix: _ } => println!("Not implemented yet"),
         DomainCommands::Import {} => program.import().await,
     }
