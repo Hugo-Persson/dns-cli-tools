@@ -67,7 +67,13 @@ jobs:
           # Move the built binary where you want it
           mkdir build
           mv "${BIN_OUTPUT}" "./build/${BIN_RELEASE}"
-          echo "ASSET=./build/${BIN_RELEASE}" >> $GITHUB_ENV
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            7z a "./build/${BIN_RELEASE}.zip" "./build/${BIN_RELEASE}"
+            echo "ASSET=./build/${BIN_RELEASE}.zip" >> $GITHUB_ENV
+          else
+            tar -czf "./build/${BIN_RELEASE}.tar.gz" "./build/${BIN_RELEASE}"
+            echo "ASSET=./build/${BIN_RELEASE}.tar.gz" >> $GITHUB_ENV
+          fi
 
       - name: Release
         uses: softprops/action-gh-release@v1
