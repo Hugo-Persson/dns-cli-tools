@@ -61,18 +61,17 @@ jobs:
           BIN_OUTPUT="target/${{ matrix.target }}/release/${PROJECT_NAME}${BIN_SUFFIX}"
 
           # Define a better name for the final binary
-          BIN_RELEASE="${PROJECT_NAME}-${{ matrix.name }}${BIN_SUFFIX}"
+          BIN_RELEASE="${PROJECT_NAME}${BIN_SUFFIX}"
           BIN_RELEASE_VERSIONED="${PROJECT_NAME}-${{ github.ref_name }}-${{ matrix.name }}${BIN_SUFFIX}"
 
           # Move the built binary where you want it
-          mkdir build
-          mv "${BIN_OUTPUT}" "./build/${BIN_RELEASE}"
+          mv "${BIN_OUTPUT}" "./${BIN_RELEASE}"
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            7z a "./build/${BIN_RELEASE}.zip" "./build/${BIN_RELEASE}"
-            echo "ASSET=./build/${BIN_RELEASE}.zip" >> $GITHUB_ENV
+            7z a "./${BIN_RELEASE}.zip" "./${BIN_RELEASE}"
+            echo "ASSET=./${BIN_RELEASE}.zip" >> $GITHUB_ENV
           else
-            tar -czf "./build/${BIN_RELEASE}.tar.gz" "./build/${BIN_RELEASE}"
-            echo "ASSET=./build/${BIN_RELEASE}.tar.gz" >> $GITHUB_ENV
+            tar -czf "./${BIN_RELEASE}.tar.gz" "./${BIN_RELEASE}"
+            echo "ASSET=./${BIN_RELEASE}.tar.gz" >> $GITHUB_ENV
           fi
 
       - name: Release

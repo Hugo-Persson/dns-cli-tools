@@ -2,26 +2,37 @@
 
 CLI tools for the DNS provider GoDaddy, useful tools to manage subdomains.
 
-# Features
+## Features
 
 - Watching for changes in public IP and updating DNS records
 - Registering new subdomains
 - Listing subdomains
 
-# Installation
+## Installation
 
-Run
+### Homebrew
+
+```sh
+brew tap hugo-persson/dns-cli-tools
+brew install hugo-persson/dns-cli-tools/dns-cli-tools
+```
+
+### Cargo
 
 ```sh
 cargo install godaddy-cli-tools
 ```
 
-# Usage
+### Build from source
+
+TODO:
+
+## Usage
 
 Run
 
 ```sh
-godaddy help
+dns-cli help
 ```
 
 to get a list of commands.
@@ -29,7 +40,7 @@ to get a list of commands.
 To get started first run
 
 ```sh
-godaddy init
+dns-cli init
 ```
 
 This will create a config file with default config. By default the config path is places at `~/.config/godaddy-cli-tools.json`, this can be overidden with the `-c` flag.
@@ -64,11 +75,9 @@ This will check if the domain has changed since the command was last run. If it 
 
 The program keeps track of last IP in a file located at `~/.lastip`
 
-# Getting api key
+## Getting api key
 
 1. Navigate to: https://developer.godaddy.com/keys
 2. Create new `Production` key
 
-# Cloudflare
-
-- Zone isa domain
+## Cloudflare
