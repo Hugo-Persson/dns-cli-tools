@@ -67,11 +67,12 @@ jobs:
           # Move the built binary where you want it
           mv "${BIN_OUTPUT}" "./${BIN_RELEASE}"
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            7z a "./${BIN_RELEASE}.zip" "./${BIN_RELEASE}"
-            echo "ASSET=./${BIN_RELEASE}.zip" >> $GITHUB_ENV
+            7z a "./${BIN_RELEASE}-${{ matrix.name }}.zip" "./${BIN_RELEASE}"
+            echo "ASSET=./${BIN_RELEASE}-${{ matrix.name }}.zip" >> $GITHUB_ENV
           else
-            tar -czf "./${BIN_RELEASE}.tar.gz" "./${BIN_RELEASE}"
-            echo "ASSET=./${BIN_RELEASE}.tar.gz" >> $GITHUB_ENV
+            
+            tar -czf "./${BIN_RELEASE}-${{ matrix.name }}.tar.gz" "./${BIN_RELEASE}"
+            echo "ASSET=./${BIN_RELEASE}-${{ matrix.name }}.tar.gz" >> $GITHUB_ENV
           fi
 
       - name: Release
