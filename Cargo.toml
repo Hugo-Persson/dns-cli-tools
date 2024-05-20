@@ -1,15 +1,15 @@
 [package]
-name = "godaddy-cli-tools"
+name = "dns-cli-tools"
 version = "0.1.6"
 edition = "2021"
 
 authors = ["Hugo Persson <hugo.e.persson@gmail.com>"]
 license = "MIT OR Apache-2.0"
-description = "A command line tool for managing GoDaddy DNS records"
+description = "A command line tool for managing DNS records, currenty support is Cloudflare"
 readme = "README.md"
-homepage = "https://github.com/Hugo-Persson/godaddy-cli-tools"
-repository = "https://github.com/Hugo-Persson/godaddy-cli-tools"
-keywords = ["cli", "godaddy", "dns"]
+homepage = "https://github.com/Hugo-Persson/dns-cli-tools"
+repository = "https://github.com/Hugo-Persson/dns-cli-tools"
+keywords = ["cli", "cloudflare", "dns"]
 categories = ["command-line-utilities"]
 
 [[bin]]

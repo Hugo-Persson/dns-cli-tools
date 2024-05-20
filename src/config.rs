@@ -86,7 +86,7 @@ impl Config {
     pub(crate) fn get_default_config_path() -> PathBuf {
         home::home_dir()
             .unwrap()
-            .join(".config/godaddy-config.json")
+            .join(".config/dns-cli-config.json")
     }
 
     pub(crate) fn get_config_path(custom_path: Option<PathBuf>) -> PathBuf {

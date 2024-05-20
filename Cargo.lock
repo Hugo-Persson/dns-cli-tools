@@ -323,6 +323,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "dns-cli-tools"
+version = "0.1.6"
+dependencies = [
+ "clap",
+ "cloudflare",
+ "home",
+ "inquire",
+ "lazy_static",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "dyn-clone"
 version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -451,21 +466,6 @@ name = "gimli"
 version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4271d37baee1b8c7e4b708028c57d816cf9d2434acb33a549475f78c181f6253"
-
-[[package]]
-name = "godaddy-cli-tools"
-version = "0.1.6"
-dependencies = [
- "clap",
- "cloudflare",
- "home",
- "inquire",
- "lazy_static",
- "reqwest",
- "serde",
- "serde_json",
- "tokio",
-]
 
 [[package]]
 name = "h2"

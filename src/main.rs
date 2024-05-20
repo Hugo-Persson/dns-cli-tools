@@ -12,14 +12,13 @@ mod cloudflare_provider;
 mod config;
 mod discord_webhook;
 mod dns_provider;
-mod godaddy_api;
 mod ip_handler;
 mod webhook_notifier;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None, arg_required_else_help = true)]
 pub struct Cli {
-    /// Sets a custom config file. Default file is ~/.config/godaddy-config.json
+    /// Sets a custom config file. Default file is ~/.config/dns-cli-config.json
     #[arg(short, long, value_name = "FILE")]
     config: Option<PathBuf>,
 
@@ -35,10 +34,6 @@ pub struct Cli {
 enum Commands {
     /// Prints the current config
     PrintConfig {},
-
-    /// Commands for interacting with the godaddy api
-    #[command(subcommand)]
-    Godaddy(DomainCommands),
 
     #[command(subcommand)]
     Cloudflare(DomainCommands),
@@ -111,17 +106,6 @@ async fn main() {
             println!("{:#?}", config);
         }
         Commands::Init {} => init(cli.config).await,
-        Commands::Godaddy(_) => {
-            // let api = GoDaddyAPI::new(
-            //     config.api_key.clone(),
-            //     config.secret.clone(),
-            //     config.domain.clone(),
-            //     get_current_ip().await,
-            //     cli.debug > 0,
-            // );
-            // let program = CLIProgram::new(api, cli.debug > 0, cli.config.clone(), config);
-            // handle_domain_command(cmd, program).await;
-        }
         Commands::Cloudflare(cmd) => {
             let api = cloudflare_provider::CloudflareProvider::new().await;
             let program = CLIProgram::new(api, cli.debug > 0, config);
