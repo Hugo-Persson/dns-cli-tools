@@ -1,12 +1,13 @@
-# Godaddy cli tools
+# DNS Cli Tools
 
-CLI tools for the DNS provider GoDaddy, useful tools to manage subdomains.
+CLI tools for the DNS provider Cloudflare, useful tools to manage subdomains. In the future more DNS providers can be added.
 
 ## Features
 
-- Watching for changes in public IP and updating DNS records
+- DDNS
 - Registering new subdomains
 - Listing subdomains
+- Importing domains
 
 ## Installation
 
@@ -43,13 +44,7 @@ To get started first run
 dns-cli init
 ```
 
-This will create a config file with default config. By default the config path is places at `~/.config/godaddy-cli-tools.json`, this can be overidden with the `-c` flag.
-
-A couple of things needs to be changed in this file to get started
-
-- domain: Change the domain from `example.com` to the main domain you want to create subdomains from
-- api_key: Your api key, see [[#getting-api-key]]
-- secret: Your secret
+This will create a config file with default config. By default the config path is places at `~/.config/dns-cli-config.json`, this can be overidden with the `-c` flag.
 
 ## Watching IP for changes
 
@@ -58,26 +53,26 @@ One of the main use cases of this program is watching the public IP of the devic
 To register a domain run:
 
 ```sh
-godaddy register mysubdomain
+dns-cli cloudflare register mysubdomain.domain.com
 ```
 
 and replcae `mysubdomain` with your subdomain.
+
+Or you can import all domains currently pointing to this IP with:
+
+```sh
+
+dns-cli cloudflare import
+```
 
 This will create/update the record for this subdomain to point to the IP adress of the device command ran at and add the record to watch list.
 
 To check for changes run
 
 ```sh
-godaddy check
+dns-cli check
 ```
 
 This will check if the domain has changed since the command was last run. If it is the first time the command is run then domains will be refreshed to point to current IP.
 
-The program keeps track of last IP in a file located at `~/.lastip`
-
-## Getting api key
-
-1. Navigate to: https://developer.godaddy.com/keys
-2. Create new `Production` key
-
-## Cloudflare
+The program keeps track of last IP in a file located at `~/.lastip.txt`
