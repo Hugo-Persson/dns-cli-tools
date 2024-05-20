@@ -79,5 +79,6 @@ The program keeps track of last IP in a file located at `~/.lastip.txt`
 
 ## TODO:
 
+- [ ] Fix auto update brew tap
 - [ ] Auto update cargo.toml version
 - [ ] Smooth registering and deletion with inquirer
