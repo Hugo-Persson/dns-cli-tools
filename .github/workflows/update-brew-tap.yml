@@ -12,8 +12,9 @@ jobs:
         with:
           repository: Hugo-Persson/homebrew-dns-cli-tools
           token: ${{ secrets.PAT }} # Personal Access Token for accessing the other repository
-          ref: main # Branch or tag to checkout
-
+          ref: main # Branch or tag to Checkout
+      - name: List files
+        run: ls -la
       - name: Run Release Script
         run: |
           chmod +x scripts/new-release-dns-cli.sh
