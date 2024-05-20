@@ -32,7 +32,10 @@ where
             if force {
                 println!("IP has not changed but force flag set, updating records...")
             } else {
-                println!("IP has changed, updating records...");
+                println!(
+                    "IP has changed to {} from {}, updating records...",
+                    current_ip, old_ip
+                );
             }
             println!("Notifying webhooks: {:?}", self.config.webhooks);
             for webhook in &self.config.webhooks {

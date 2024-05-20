@@ -15,10 +15,10 @@ impl DiscordWebhook {
 }
 
 impl WebhookNotifier for DiscordWebhook {
-    async fn change_ip(&self, from: &String, to: &String) -> () {
+    async fn change_ip(&self, from: &String, to: &String) {
         println!("DiscordWebhook::change_ip from: {}, to: {}", from, to);
         let client = Client::new();
-        let resp = client
+        let _ = client
             .post(&self.url)
             .json(&json!({
                 "content": format!("IP changed from {} to {}", from, to)

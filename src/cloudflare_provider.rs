@@ -53,6 +53,14 @@ pub struct CloudflareProvider {
     client: Client,
     config: Config,
 }
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateResponse {
+    success: bool,
+    errors: Vec<Value>,
+}
+
 impl CloudflareProvider {
     pub async fn new() -> Self {
         let client = Client::new();
@@ -116,6 +124,7 @@ impl CloudflareProvider {
         let body = json!({
         "type": "A",
         "name": record.name,
+        "proxied": true,
         "content": ip,
         });
         let text_response = self
@@ -132,7 +141,12 @@ impl CloudflareProvider {
             .text()
             .await
             .unwrap();
-        println!("{:#?}", text_response);
+        let response: UpdateResponse = serde_json::from_str(&text_response).unwrap();
+        if !response.success {
+            panic!("Error: {:#?}", response.errors)
+        } else {
+            println!("Updated {} to {}", record.name, ip);
+        }
     }
 }
 impl DnsProvider for CloudflareProvider {
@@ -198,6 +212,7 @@ impl DnsProvider for CloudflareProvider {
     }
 
     async fn change_ip(&self, ip: &str) {
+        println!("Cloudflare: Updating records to {}", ip);
         for (id, domain) in self.config.cloudflare_config.domains.iter() {
             for record in domain.records.iter() {
                 self.update_ip(ip, record, id.clone()).await;

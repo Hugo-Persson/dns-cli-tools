@@ -2,7 +2,7 @@ name: Update the homebrew tap
 on:
   workflow_dispatch:
   release:
-    types: [published]
+    types: [published, released]
 jobs:
   run-script:
     runs-on: ubuntu-latest
