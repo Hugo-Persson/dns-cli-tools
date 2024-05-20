@@ -34,4 +34,3 @@ jobs:
         with:
           repository: Hugo-Persson/homebrew-dns-cli-tools
           github_token: ${{ secrets.PAT }}
-          ref: main # Branch or tag to Checkout
