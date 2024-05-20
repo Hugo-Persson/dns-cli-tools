@@ -1,5 +1,6 @@
 name: Update the homebrew tap
 on:
+  workflow_dispatch:
   release:
     types: [published]
 jobs:
