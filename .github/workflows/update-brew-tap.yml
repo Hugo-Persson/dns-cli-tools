@@ -1,0 +1,33 @@
+name: Update the homebrew tap
+on:
+  release:
+    types: [published]
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Different Repository
+        uses: actions/checkout@v2
+        with:
+          repository: Hugo-Persson/homebrew-dns-cli-tools
+          token: ${{ secrets.PAT }} # Personal Access Token for accessing the other repository
+          ref: main # Branch or tag to checkout
+
+      - name: Run Release Script
+        run: |
+          chmod +x scripts/new-release-dns-cli.sh
+          ./scripts/new-release-dns-cli.sh
+      - name: Add changes
+        run: |
+          git add .
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -m "Automated script run" || echo "No changes to commit"
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
