@@ -1,4 +1,4 @@
-pub fn get_last_ip(debug: bool) -> String {
+pub fn get_last_ip(debug: bool) -> Option<String> {
     let home = home::home_dir().expect("Could not get home dir :(, please file bug report");
 
     let path = home.join(".last_ip.txt");
@@ -6,9 +6,9 @@ pub fn get_last_ip(debug: bool) -> String {
         if debug {
             println!("No last ip file found, probably first run");
         }
-        return "".to_string();
+        return None;
     }
-    std::fs::read_to_string(path).unwrap()
+    Some(std::fs::read_to_string(path).unwrap())
 }
 
 pub async fn get_current_ip() -> String {

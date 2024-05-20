@@ -26,7 +26,12 @@ where
         println!("Checking for new ip...");
         let old_ip = get_last_ip(self.debug);
         let current_ip = get_current_ip().await;
-        if old_ip == current_ip && !force {
+        if old_ip.is_none() {
+            println!("No previous IP found, saving current IP");
+            save_ip(&current_ip).await;
+            return;
+        }
+        if old_ip == current_ip.unwrap && !force {
             println!("IP has not changed, doing nothing");
         } else {
             if force {
