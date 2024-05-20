@@ -76,3 +76,8 @@ dns-cli check
 This will check if the domain has changed since the command was last run. If it is the first time the command is run then domains will be refreshed to point to current IP.
 
 The program keeps track of last IP in a file located at `~/.lastip.txt`
+
+## TODO:
+
+- [ ] Auto update cargo.toml version
+- [ ] Smooth registering and deletion with inquirer
