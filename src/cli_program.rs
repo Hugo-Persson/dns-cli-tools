@@ -24,14 +24,15 @@ where
 
     pub(crate) async fn check_for_new_ip(&self, force: bool) {
         println!("Checking for new ip...");
-        let old_ip = get_last_ip(self.debug);
+        let old_ip_opt = get_last_ip(self.debug);
         let current_ip = get_current_ip().await;
-        if old_ip.is_none() {
+        if old_ip_opt.is_none() {
             println!("No previous IP found, saving current IP");
             save_ip(&current_ip).await;
             return;
         }
-        if old_ip == current_ip.unwrap && !force {
+        let old_ip = old_ip_opt.unwrap();
+        if old_ip == current_ip && !force {
             println!("IP has not changed, doing nothing");
         } else {
             if force {

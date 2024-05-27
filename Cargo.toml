@@ -1,6 +1,6 @@
 [package]
 name = "dns-cli-tools"
-version = "0.1.10"
+version = "0.1.11"
 edition = "2021"
 
 authors = ["Hugo Persson <hugo.e.persson@gmail.com>"]

@@ -124,12 +124,11 @@ impl CloudflareProvider {
         let body = json!({
         "type": "A",
         "name": record.name,
-        "proxied": true,
         "content": ip,
         });
         let text_response = self
             .client
-            .put(url)
+            .patch(url)
             .header(
                 reqwest::header::AUTHORIZATION,
                 format!("Bearer {}", self.config.cloudflare_config.api_token),
