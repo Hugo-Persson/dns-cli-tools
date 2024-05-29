@@ -15,4 +15,5 @@ cargo build
 git add ./Cargo.*
 git commit -m "Release $NEW_VERSION"
 git tag $NEW_VERSION
+git push
 git push --tags
