@@ -261,7 +261,7 @@ impl DnsProvider for CloudflareProvider {
                     continue;
                 }
                 if record.type_field == "A" {
-                    println!("Importing {}.{} ", record.name, domain.domain);
+                    println!("Importing {}", record.name);
                     domain.records.push(Record {
                         name: record.name.clone(),
                         id: record.id.clone(),
