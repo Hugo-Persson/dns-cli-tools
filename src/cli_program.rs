@@ -140,12 +140,7 @@ where
     pub fn ls(&self) {
         for (_, domain) in &self.config.cloudflare_config.domains {
             for record in &domain.records {
-                println!(
-                    "{}.{} - {}",
-                    record.name,
-                    domain.domain,
-                    record.record_type.to_string()
-                );
+                println!("{} - {}", record.name, record.record_type.to_string());
             }
         }
     }

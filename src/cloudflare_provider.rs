@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use inquire::{prompt_text, Confirm};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -27,6 +29,15 @@ pub struct Zone {
 #[serde(rename_all = "camelCase")]
 pub struct DNSListResponse {
     pub result: Option<Vec<DnsRecord>>,
+    pub success: bool,
+    pub errors: Vec<Value>,
+    pub messages: Vec<Value>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DNSCreateResponse {
+    pub result: Option<DnsRecord>,
     pub success: bool,
     pub errors: Vec<Value>,
     pub messages: Vec<Value>,
@@ -173,9 +184,15 @@ impl DnsProvider for CloudflareProvider {
             .await
             .unwrap();
         //println!("{:#?}", text_response);
-        let response: DNSListResponse = serde_json::from_str(&text_response).unwrap();
+        let response: DNSCreateResponse = serde_json::from_str(&text_response)
+            .map_err(|e| {
+                println!("Failed to parse: {}", text_response);
+                e
+            })
+            .unwrap();
+
         if response.success {
-            response.result.unwrap()[0].id.clone()
+            response.result.unwrap().id.clone()
         } else {
             print!("{}", text_response);
             panic!("Error: {:#?}", response.errors)
