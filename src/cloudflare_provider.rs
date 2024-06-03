@@ -162,7 +162,7 @@ impl CloudflareProvider {
 impl DnsProvider for CloudflareProvider {
     async fn set_sub_domain(&self, record: &crate::config::Record, id: String) -> String {
         let url = format!("{}/zones/{}/dns_records", CLOUDFLARE_API_URL, id);
-        let ip = get_current_ip().await;
+        let ip = get_current_ip().await.expect("Could not get current ip");
         let body = json!({
         "type": "A",
         "name": record.name,
@@ -204,7 +204,7 @@ impl DnsProvider for CloudflareProvider {
             "{}/zones/{}/dns_records/{}",
             CLOUDFLARE_API_URL, zone_id, record.id
         );
-        let ip = get_current_ip().await;
+        let ip = get_current_ip().await.expect("Could not get current ip");
         let body = json!({
         "type": "A",
         "name": record.name,
@@ -238,7 +238,7 @@ impl DnsProvider for CloudflareProvider {
 
     async fn import(&mut self) {
         self.sync_zones().await;
-        let ip = get_current_ip().await;
+        let ip = get_current_ip().await.expect("Could not get current ip");
         for (id, domain) in self.config.cloudflare_config.domains.iter_mut() {
             let response: DNSListResponse = self
                 .client

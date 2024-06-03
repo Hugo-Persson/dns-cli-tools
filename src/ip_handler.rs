@@ -1,3 +1,4 @@
+use std::net::IpAddr;
 pub fn get_last_ip(debug: bool) -> Option<String> {
     let home = home::home_dir().expect("Could not get home dir :(, please file bug report");
 
@@ -11,13 +12,16 @@ pub fn get_last_ip(debug: bool) -> Option<String> {
     Some(std::fs::read_to_string(path).unwrap())
 }
 
-pub async fn get_current_ip() -> String {
-    reqwest::get("https://api.ipify.org")
-        .await
-        .unwrap()
-        .text()
-        .await
-        .unwrap()
+fn is_valid_ip(ip: &str) -> bool {
+    ip.parse::<IpAddr>().is_ok()
+}
+
+pub async fn get_current_ip() -> Result<String, Box<dyn std::error::Error>> {
+    let ip = reqwest::get("https://api.ipify.org").await?.text().await?;
+    if !is_valid_ip(&ip) {
+        return Err("Could not get a valid IP".into());
+    }
+    Ok(ip)
 }
 
 pub async fn save_ip(ip: &String) {

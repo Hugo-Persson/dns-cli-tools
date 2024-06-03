@@ -25,7 +25,7 @@ where
     pub(crate) async fn check_for_new_ip(&self, force: bool) {
         println!("Checking for new ip...");
         let old_ip_opt = get_last_ip(self.debug);
-        let current_ip = get_current_ip().await;
+        let current_ip = get_current_ip().await.expect("Could not get current IP");
         if old_ip_opt.is_none() {
             println!("No previous IP found, saving current IP");
             save_ip(&current_ip).await;
