@@ -324,7 +324,7 @@ dependencies = [
 
 [[package]]
 name = "dns-cli-tools"
-version = "1.0.18"
+version = "1.0.19"
 dependencies = [
  "clap",
  "cloudflare",
