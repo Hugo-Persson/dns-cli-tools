@@ -47,6 +47,10 @@ pub struct DNSCreateResponse {
 #[serde(rename_all = "camelCase")]
 pub struct DnsRecord {
     pub id: String,
+    #[serde(rename = "zone_id")]
+    pub zone_id: String,
+    #[serde(rename = "zone_name")]
+    pub zone_name: String,
     pub name: String,
     #[serde(rename = "type")]
     pub type_field: String,
@@ -54,10 +58,14 @@ pub struct DnsRecord {
     pub proxiable: bool,
     pub proxied: bool,
     pub ttl: i64,
-    pub locked: bool,
+    //pub settings: Settings,
+    //pub meta: Meta,
     pub comment: Value,
     pub tags: Vec<Value>,
-    pub priority: Option<i64>,
+    #[serde(rename = "created_on")]
+    pub created_on: String,
+    #[serde(rename = "modified_on")]
+    pub modified_on: String,
 }
 
 pub struct CloudflareProvider {
