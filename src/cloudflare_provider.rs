@@ -9,7 +9,7 @@ use crate::config::{Config, Domain, Record, CONFIG_SINGLETON};
 use crate::dns_provider::DnsProvider;
 use crate::ip_handler::get_current_ip;
 
-use serde_json::{json, Value};
+use serde_json::{from_str, json, Value};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ZoneResponse {
@@ -248,7 +248,7 @@ impl DnsProvider for CloudflareProvider {
         self.sync_zones().await;
         let ip = get_current_ip().await.expect("Could not get current ip");
         for (id, domain) in self.config.cloudflare_config.domains.iter_mut() {
-            let response: DNSListResponse = self
+            let response_txt = self
                 .client
                 .get(format!(
                     "{}/zones/{}/dns_records?content={}",
@@ -261,21 +261,33 @@ impl DnsProvider for CloudflareProvider {
                 .send()
                 .await
                 .unwrap()
-                .json()
+                .text()
                 .await
                 .unwrap();
-            for record in response.result.expect("Results missing").iter() {
-                if domain.records.iter().any(|r| r.id == record.id) {
-                    continue;
+
+            let response: DNSListResponse = serde_json::from_str(&response_txt)
+                .map_err(|err| {
+                    println!("Could not parse response: {:#?}", err);
+                    println!("Response: {}", response_txt);
+                    err
+                })
+                .unwrap();
+            if let Some(records) = response.result {
+                for record in records.iter() {
+                    if domain.records.iter().any(|r| r.id == record.id) {
+                        continue;
+                    }
+                    if record.type_field == "A" {
+                        println!("Importing {}", record.name);
+                        domain.records.push(Record {
+                            name: record.name.clone(),
+                            id: record.id.clone(),
+                            record_type: crate::config::RecordType::A,
+                        });
+                    }
                 }
-                if record.type_field == "A" {
-                    println!("Importing {}", record.name);
-                    domain.records.push(Record {
-                        name: record.name.clone(),
-                        id: record.id.clone(),
-                        record_type: crate::config::RecordType::A,
-                    });
-                }
+            } else {
+                println!("Could not import, got errors {:#?}", response.errors);
             }
         }
         CONFIG_SINGLETON.lock().await.save(self.config.clone());
