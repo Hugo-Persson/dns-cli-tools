@@ -18,6 +18,13 @@ brew tap hugo-persson/dns-cli-tools
 brew install hugo-persson/dns-cli-tools/dns-cli-tools
 ```
 
+#### Updating
+
+```sh
+brew upgrade dns-cli-tools
+
+```
+
 ### Cargo
 
 ```sh
@@ -76,6 +83,10 @@ dns-cli check
 This will check if the domain has changed since the command was last run. If it is the first time the command is run then domains will be refreshed to point to current IP.
 
 The program keeps track of last IP in a file located at `~/.lastip.txt`
+
+## Troubleshooting
+
+If any errors occur or similiar you can edit the config file manually, default location is `~/.config/dns-cli-config.json`
 
 ## TODO:
 
