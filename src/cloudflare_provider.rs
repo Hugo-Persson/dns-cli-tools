@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use inquire::{prompt_text, Confirm};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -47,10 +45,6 @@ pub struct DNSCreateResponse {
 #[serde(rename_all = "camelCase")]
 pub struct DnsRecord {
     pub id: String,
-    #[serde(rename = "zone_id")]
-    pub zone_id: String,
-    #[serde(rename = "zone_name")]
-    pub zone_name: String,
     pub name: String,
     #[serde(rename = "type")]
     pub type_field: String,
@@ -232,7 +226,7 @@ impl DnsProvider for CloudflareProvider {
             .text()
             .await
             .unwrap();
-        println!("{:#?}", text_response);
+        println!("Response: {:#?}", text_response);
     }
 
     async fn change_ip(&self, ip: &str) {

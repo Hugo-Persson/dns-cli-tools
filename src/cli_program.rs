@@ -73,7 +73,7 @@ where
             .records
             .iter()
             .position(|e| e.name == domain)
-            .expect("Record not found");
+            .expect("Record not found, maybe you want to run `import` first?");
         let record = zone.1.records.get(record_index).unwrap();
         self.api.remove_sub_domain(record, zone.0.to_owned()).await;
         let domains = self.config.cloudflare_config.domains.clone();
