@@ -148,6 +148,23 @@ where
     pub async fn import(&mut self) {
         self.api.import().await;
     }
-}
 
-// Helpers
+    pub async fn inspect_domain(&mut self, prefix: String) {
+        println!("Inspecting domain: {}", prefix);
+        
+        match self.api.get_domain_details(&prefix).await {
+            Ok(details) => {
+                println!("Domain Details:");
+                println!("  Name: {}", details.name);
+                println!("  Type: {}", details.record_type);
+                println!("  Content: {}", details.content);
+                println!("  Proxied: {}", details.proxied);
+                println!("  TTL: {}", details.ttl);
+                println!("  Last Updated: {}", details.modified_on.unwrap_or_default());
+            },
+            Err(e) => {
+                println!("Failed to fetch domain details: {}", e);
+            }
+        }
+    }
+}

@@ -70,6 +70,12 @@ enum DomainCommands {
     },
     /// Imports entries that have the same ip as the current ip
     Import {},
+    
+    /// Fetches detailed information about a specific domain
+    Inspect {
+        /// The prefix of the subdomain to inspect
+        prefix: String,
+    },
 }
 
 #[derive(Subcommand, PartialEq)]
@@ -138,6 +144,7 @@ async fn handle_domain_command<T: DnsProvider>(cmd: DomainCommands, mut program:
         DomainCommands::Register { prefix } => program.register_sub_domain(prefix).await,
         DomainCommands::Rm { prefix } => program.remove_sub_domain(prefix).await,
         DomainCommands::Import {} => program.import().await,
+        DomainCommands::Inspect { prefix } => program.inspect_domain(prefix).await,
     }
 }
 

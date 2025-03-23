@@ -286,4 +286,121 @@ impl DnsProvider for CloudflareProvider {
         }
         CONFIG_SINGLETON.lock().await.save(self.config.clone());
     }
+
+    async fn get_domain_details(&self, prefix: &str) -> Result<crate::dns_provider::DomainDetails, Box<dyn std::error::Error>> {
+        // First, find the domain and record that matches the prefix
+        let mut found_zone_id = None;
+        let mut found_record_id = None;
+        let mut full_domain_name = String::new();
+
+        // Search through all domains to find the matching record
+        for (zone_id, domain) in self.config.cloudflare_config.domains.iter() {
+            for record in &domain.records {
+                // The record.name will be the full domain name (e.g., prefix.example.com)
+                if record.name.starts_with(prefix) && 
+                   (record.name == prefix || record.name.starts_with(&format!("{}.", prefix))) {
+                    found_zone_id = Some(zone_id.clone());
+                    found_record_id = Some(record.id.clone());
+                    full_domain_name = record.name.clone();
+                    break;
+                }
+            }
+            if found_zone_id.is_some() {
+                break;
+            }
+        }
+
+        // If we couldn't find a matching record, return an error
+        let zone_id = found_zone_id.ok_or_else(|| format!("No domain found with prefix: {}", prefix))?;
+
+        // If we found a record ID, fetch the specific record
+        if let Some(record_id) = found_record_id {
+            let url = format!(
+                "{}/zones/{}/dns_records/{}",
+                CLOUDFLARE_API_URL, zone_id, record_id
+            );
+
+            let response = self
+                .client
+                .get(url)
+                .header(
+                    reqwest::header::AUTHORIZATION,
+                    format!("Bearer {}", self.config.cloudflare_config.api_token),
+                )
+                .send()
+                .await?;
+
+            if !response.status().is_success() {
+                return Err(format!("Failed to fetch domain details: HTTP {}", response.status()).into());
+            }
+
+            let text_response = response.text().await?;
+            let response: DNSCreateResponse = serde_json::from_str(&text_response)
+                .map_err(|e| {
+                    format!("Failed to parse response: {}\nResponse: {}", e, text_response)
+                })?;
+
+            if !response.success {
+                return Err(format!("Cloudflare API error: {:?}", response.errors).into());
+            }
+
+            if let Some(record) = response.result {
+                return Ok(crate::dns_provider::DomainDetails {
+                    name: record.name,
+                    record_type: record.type_field,
+                    content: record.content,
+                    proxied: record.proxied,
+                    ttl: record.ttl as u32,
+                    modified_on: Some(record.modified_on),
+                });
+            } else {
+                return Err("No record details returned from Cloudflare".into());
+            }
+        } else {
+            // Try to find the record by searching the zone's DNS records
+            let url = format!(
+                "{}/zones/{}/dns_records?name={}",
+                CLOUDFLARE_API_URL, zone_id, full_domain_name
+            );
+
+            let response = self
+                .client
+                .get(url)
+                .header(
+                    reqwest::header::AUTHORIZATION,
+                    format!("Bearer {}", self.config.cloudflare_config.api_token),
+                )
+                .send()
+                .await?;
+
+            if !response.status().is_success() {
+                return Err(format!("Failed to fetch domain details: HTTP {}", response.status()).into());
+            }
+
+            let text_response = response.text().await?;
+            let response: DNSListResponse = serde_json::from_str(&text_response)
+                .map_err(|e| {
+                    format!("Failed to parse response: {}\nResponse: {}", e, text_response)
+                })?;
+
+            if !response.success {
+                return Err(format!("Cloudflare API error: {:?}", response.errors).into());
+            }
+
+            if let Some(records) = response.result {
+                if let Some(record) = records.first() {
+                    return Ok(crate::dns_provider::DomainDetails {
+                        name: record.name.clone(),
+                        record_type: record.type_field.clone(),
+                        content: record.content.clone(),
+                        proxied: record.proxied,
+                        ttl: record.ttl as u32,
+                        modified_on: Some(record.modified_on.clone()),
+                    });
+                }
+            }
+            
+            return Err(format!("No DNS record found with prefix: {}", prefix).into());
+        }
+    }
 }
