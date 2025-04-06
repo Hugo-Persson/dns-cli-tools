@@ -1,10 +1,12 @@
 use crate::config::Config;
 use crate::discord_webhook::DiscordWebhook;
 use crate::webhook_notifier::WebhookNotifierType;
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
+use clap_complete::{generate, Shell};
 use cli_program::CLIProgram;
 use config::CONFIG_SINGLETON;
 use dns_provider::DnsProvider;
+use std::io;
 use std::path::PathBuf;
 
 mod cli_program;
@@ -48,6 +50,13 @@ enum Commands {
     /// Commands for interacting with discord webhooks
     #[command(subcommand)]
     Discord(WebhookCommands),
+
+    /// Generate shell completion scripts
+    Completion {
+        /// Shell to generate completion for
+        #[arg(value_enum)]
+        shell: Shell,
+    },
 }
 
 #[derive(Subcommand, PartialEq)]
@@ -112,6 +121,12 @@ async fn main() {
         None => return, // clap will show help and exit before this point due to arg_required_else_help
     };
 
+    // Handle completion command before initializing config
+    if let Commands::Completion { shell } = command {
+        generate_completion(shell);
+        return;
+    }
+
     if let Commands::Init {} = command {
         // If the command is Init, we don't need to load the config
         // because we are creating a new one
@@ -132,7 +147,9 @@ async fn main() {
             let program = CLIProgram::new(api, cli.debug > 0, dry_run, config);
             handle_domain_command(cmd, program).await;
         }
-
+        Commands::Completion { .. } => {
+            // Already handled before config initialization
+        }
         Commands::Discord(cmd) => match cmd {
             WebhookCommands::Add { url } => {
                 println!("Adding webhook: {}", url);
@@ -175,4 +192,11 @@ async fn init(path: Option<PathBuf>) {
     println!("Creating new config file at path: {:?}", path);
     Config::get_default_config().write(&path);
     println!("Done!");
+}
+
+/// Generate shell completion scripts for the specified shell
+fn generate_completion(shell: Shell) {
+    let mut cmd = Cli::command();
+    let name = cmd.get_name().to_string();
+    generate(shell, &mut cmd, name, &mut io::stdout());
 }
