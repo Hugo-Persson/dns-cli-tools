@@ -84,6 +84,16 @@ This will check if the domain has changed since the command was last run. If it 
 
 The program keeps track of last IP in a file located at `~/.lastip.txt`
 
+## Installing completions
+
+To install completions for your shell run:
+
+### Fish
+
+```sh
+mkdir -p ~/.local/share/fish/vendor_completions.d && dns-cli completion fish > ~/.local/share/fish/vendor_completions.d/dns-cli.fish && exec fish
+```
+
 ## Troubleshooting
 
 If any errors occur or similiar you can edit the config file manually, default location is `~/.config/dns-cli-config.json`
@@ -93,3 +103,4 @@ If any errors occur or similiar you can edit the config file manually, default l
 - [ ] Fix auto update brew tap
 - [ ] Auto update cargo.toml version
 - [ ] Smooth registering and deletion with inquirer
+- [ ] Auto completions with homebrew
