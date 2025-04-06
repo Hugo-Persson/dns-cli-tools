@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.24] - 2025-04-06
+
+### 🐛 Bug Fixes
+
+- Made import sync
+
+### 📚 Documentation
+
+- *(readme)* Add fish shell completion installation instructions
+
 ## [1.0.23] - 2025-04-06
 
 ### 🚀 Features
