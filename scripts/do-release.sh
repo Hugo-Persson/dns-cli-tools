@@ -8,7 +8,7 @@ old_version=$(git describe --tags --abbrev=0)
 
 echo "Old version: $old_version"
 
-NEW_VERSION=$(semver next patch $old_version)
+NEW_VERSION=$(semver -i patch $old_version)
 echo "New version: $NEW_VERSION"
 sed -i '' "s/^version = ".*"/version = \"$NEW_VERSION\"/" ./Cargo.toml
 cargo build
