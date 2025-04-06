@@ -155,6 +155,9 @@ impl CloudflareProvider {
             .unwrap();
         let response: UpdateResponse = serde_json::from_str(&text_response).unwrap();
         if !response.success {
+            println!("Failed to update record: {:#?}", response);
+            println!("Request was {:#?}", body);
+
             panic!("Error: {:#?}", response.errors)
         } else {
             println!("Updated {} to {}", record.name, ip);
@@ -259,6 +262,7 @@ impl DnsProvider for CloudflareProvider {
                 .await
                 .unwrap();
 
+            let mut resulting_domain_list = vec![];
             let response: DNSListResponse = serde_json::from_str(&response_txt)
                 .map_err(|err| {
                     println!("Could not parse response: {:#?}", err);
@@ -268,18 +272,39 @@ impl DnsProvider for CloudflareProvider {
                 .unwrap();
             if let Some(records) = response.result {
                 for record in records.iter() {
-                    if domain.records.iter().any(|r| r.id == record.id) {
-                        continue;
-                    }
                     if record.type_field == "A" {
-                        println!("Importing {}", record.name);
-                        domain.records.push(Record {
+                        resulting_domain_list.push(Record {
                             name: record.name.clone(),
                             id: record.id.clone(),
                             record_type: crate::config::RecordType::A,
                         });
+                        if domain.records.iter().any(|r| r.id == record.id) {
+                            continue;
+                        }
+                        println!("Importing {}", record.name);
                     }
                 }
+                for existing_record in domain.records.iter() {
+                    if resulting_domain_list
+                        .iter()
+                        .any(|r| r.id == existing_record.id)
+                    {
+                        continue;
+                    }
+                    let ans = Confirm::new(
+                        format!(
+                            "{} not found on remote, you want to add it?",
+                            existing_record.name
+                        )
+                        .as_str(),
+                    )
+                    .with_default(false)
+                    .prompt();
+                    if let Ok(true) = ans {
+                        println!("TODO")
+                    }
+                }
+                domain.records = resulting_domain_list.clone();
             } else {
                 println!("Could not import, got errors {:#?}", response.errors);
             }
@@ -287,7 +312,10 @@ impl DnsProvider for CloudflareProvider {
         CONFIG_SINGLETON.lock().await.save(self.config.clone());
     }
 
-    async fn get_domain_details(&self, prefix: &str) -> Result<crate::dns_provider::DomainDetails, Box<dyn std::error::Error>> {
+    async fn get_domain_details(
+        &self,
+        prefix: &str,
+    ) -> Result<crate::dns_provider::DomainDetails, Box<dyn std::error::Error>> {
         // First, find the domain and record that matches the prefix
         let mut found_zone_id = None;
         let mut found_record_id = None;
@@ -297,8 +325,9 @@ impl DnsProvider for CloudflareProvider {
         for (zone_id, domain) in self.config.cloudflare_config.domains.iter() {
             for record in &domain.records {
                 // The record.name will be the full domain name (e.g., prefix.example.com)
-                if record.name.starts_with(prefix) && 
-                   (record.name == prefix || record.name.starts_with(&format!("{}.", prefix))) {
+                if record.name.starts_with(prefix)
+                    && (record.name == prefix || record.name.starts_with(&format!("{}.", prefix)))
+                {
                     found_zone_id = Some(zone_id.clone());
                     found_record_id = Some(record.id.clone());
                     full_domain_name = record.name.clone();
@@ -311,7 +340,8 @@ impl DnsProvider for CloudflareProvider {
         }
 
         // If we couldn't find a matching record, return an error
-        let zone_id = found_zone_id.ok_or_else(|| format!("No domain found with prefix: {}", prefix))?;
+        let zone_id =
+            found_zone_id.ok_or_else(|| format!("No domain found with prefix: {}", prefix))?;
 
         // If we found a record ID, fetch the specific record
         if let Some(record_id) = found_record_id {
@@ -331,13 +361,18 @@ impl DnsProvider for CloudflareProvider {
                 .await?;
 
             if !response.status().is_success() {
-                return Err(format!("Failed to fetch domain details: HTTP {}", response.status()).into());
+                return Err(
+                    format!("Failed to fetch domain details: HTTP {}", response.status()).into(),
+                );
             }
 
             let text_response = response.text().await?;
-            let response: DNSCreateResponse = serde_json::from_str(&text_response)
-                .map_err(|e| {
-                    format!("Failed to parse response: {}\nResponse: {}", e, text_response)
+            let response: DNSCreateResponse =
+                serde_json::from_str(&text_response).map_err(|e| {
+                    format!(
+                        "Failed to parse response: {}\nResponse: {}",
+                        e, text_response
+                    )
                 })?;
 
             if !response.success {
@@ -374,14 +409,18 @@ impl DnsProvider for CloudflareProvider {
                 .await?;
 
             if !response.status().is_success() {
-                return Err(format!("Failed to fetch domain details: HTTP {}", response.status()).into());
+                return Err(
+                    format!("Failed to fetch domain details: HTTP {}", response.status()).into(),
+                );
             }
 
             let text_response = response.text().await?;
-            let response: DNSListResponse = serde_json::from_str(&text_response)
-                .map_err(|e| {
-                    format!("Failed to parse response: {}\nResponse: {}", e, text_response)
-                })?;
+            let response: DNSListResponse = serde_json::from_str(&text_response).map_err(|e| {
+                format!(
+                    "Failed to parse response: {}\nResponse: {}",
+                    e, text_response
+                )
+            })?;
 
             if !response.success {
                 return Err(format!("Cloudflare API error: {:?}", response.errors).into());
@@ -399,7 +438,7 @@ impl DnsProvider for CloudflareProvider {
                     });
                 }
             }
-            
+
             return Err(format!("No DNS record found with prefix: {}", prefix).into());
         }
     }
