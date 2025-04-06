@@ -10,6 +10,7 @@ where
     T: DnsProvider,
 {
     debug: bool,
+    dry_run: bool,
     config: Config,
     api: T,
 }
@@ -18,8 +19,13 @@ impl<T> CLIProgram<T>
 where
     T: DnsProvider,
 {
-    pub fn new(api: T, debug: bool, config: Config) -> CLIProgram<T> {
-        CLIProgram { debug, config, api }
+    pub fn new(api: T, debug: bool, dry_run: bool, config: Config) -> CLIProgram<T> {
+        CLIProgram {
+            debug,
+            dry_run,
+            config,
+            api,
+        }
     }
 
     pub(crate) async fn check_for_new_ip(&self, force: bool) {
@@ -28,7 +34,11 @@ where
         let current_ip = get_current_ip().await.expect("Could not get current IP");
         if old_ip_opt.is_none() {
             println!("No previous IP found, saving current IP");
-            save_ip(&current_ip).await;
+            if !self.dry_run {
+                save_ip(&current_ip).await;
+            } else {
+                println!("[DRY RUN] Would save IP: {}", current_ip);
+            }
             return;
         }
         let old_ip = old_ip_opt.unwrap();
@@ -43,16 +53,28 @@ where
                     current_ip, old_ip
                 );
             }
-            println!("Notifying webhooks: {:?}", self.config.webhooks);
-            for webhook in &self.config.webhooks {
-                match webhook {
-                    DiscordWebhook(webhook) => {
-                        webhook.change_ip(&old_ip, &current_ip).await;
+
+            if self.dry_run {
+                println!(
+                    "[DRY RUN] Would notify webhooks: {:?}",
+                    self.config.webhooks
+                );
+                println!(
+                    "[DRY RUN] Would update DNS records with new IP: {}",
+                    current_ip
+                );
+            } else {
+                println!("Notifying webhooks: {:?}", self.config.webhooks);
+                for webhook in &self.config.webhooks {
+                    match webhook {
+                        DiscordWebhook(webhook) => {
+                            webhook.change_ip(&old_ip, &current_ip).await;
+                        }
                     }
                 }
+                self.update_records(&current_ip).await;
+                save_ip(&current_ip).await;
             }
-            self.update_records(&current_ip).await;
-            save_ip(&current_ip).await;
         }
     }
 
@@ -75,6 +97,13 @@ where
             .position(|e| e.name == domain)
             .expect("Record not found, maybe you want to run `import` first?");
         let record = zone.1.records.get(record_index).unwrap();
+
+        if self.dry_run {
+            println!("[DRY RUN] Would remove subdomain: {}", record.name);
+            println!("[DRY RUN] Would update configuration to stop tracking this subdomain");
+            return;
+        }
+
         self.api.remove_sub_domain(record, zone.0.to_owned()).await;
         let domains = self.config.cloudflare_config.domains.clone();
 
@@ -91,7 +120,11 @@ where
 
     async fn update_records(&self, new_ip: &str) {
         println!("Updating records...");
-        self.api.change_ip(new_ip).await;
+        if self.dry_run {
+            println!("[DRY RUN] Would update DNS records with new IP: {}", new_ip);
+        } else {
+            self.api.change_ip(new_ip).await;
+        }
     }
 
     pub(crate) async fn register_sub_domain(&mut self, domain: String) {
@@ -102,6 +135,7 @@ where
             "Registering subdomain {} for {}",
             domain_chunks[0], zone_name
         );
+
         let zone_id = self
             .config
             .cloudflare_config
@@ -109,6 +143,16 @@ where
             .iter()
             .find(|e| e.1.domain == zone_name)
             .expect("Domain not found");
+
+        if self.dry_run {
+            println!(
+                "[DRY RUN] Would create subdomain {} for zone {}",
+                domain, zone_name
+            );
+            println!("[DRY RUN] Would update configuration to track the new subdomain");
+            return;
+        }
+
         let id = self
             .api
             .set_sub_domain(
@@ -146,12 +190,16 @@ where
     }
 
     pub async fn import(&mut self) {
+        if self.dry_run {
+            println!("[DRY RUN] Would import DNS records with matching IP");
+            return;
+        }
         self.api.import().await;
     }
 
     pub async fn inspect_domain(&mut self, prefix: String) {
         println!("Inspecting domain: {}", prefix);
-        
+
         match self.api.get_domain_details(&prefix).await {
             Ok(details) => {
                 println!("Domain Details:");
@@ -160,8 +208,11 @@ where
                 println!("  Content: {}", details.content);
                 println!("  Proxied: {}", details.proxied);
                 println!("  TTL: {}", details.ttl);
-                println!("  Last Updated: {}", details.modified_on.unwrap_or_default());
-            },
+                println!(
+                    "  Last Updated: {}",
+                    details.modified_on.unwrap_or_default()
+                );
+            }
             Err(e) => {
                 println!("Failed to fetch domain details: {}", e);
             }

@@ -23,8 +23,12 @@ pub struct Cli {
     config: Option<PathBuf>,
 
     /// Turn debugging information on
-    #[arg(short, long, action = clap::ArgAction::Count)]
+    #[arg(long, action = clap::ArgAction::Count)]
     debug: u8,
+
+    /// Performs a dry-run (shows what would happen without making any API requests)
+    #[arg(short, long)]
+    dry_run: bool,
 
     #[command(subcommand)]
     command: Option<Commands>,
@@ -70,7 +74,7 @@ enum DomainCommands {
     },
     /// Imports entries that have the same ip as the current ip
     Import {},
-    
+
     /// Fetches detailed information about a specific domain
     Inspect {
         /// The prefix of the subdomain to inspect
@@ -99,8 +103,18 @@ enum WebhookCommands {
 async fn main() {
     let cli = Cli::parse();
     let path = Config::get_config_path(cli.config.clone());
-    let command = cli.command.expect("No command provided");
-    if (command == Commands::Init {}) {
+    let dry_run = cli.dry_run;
+
+    // Check if command is None, which should not happen due to arg_required_else_help = true
+    // but we handle it gracefully anyway
+    let command = match cli.command {
+        Some(cmd) => cmd,
+        None => return, // clap will show help and exit before this point due to arg_required_else_help
+    };
+
+    if let Commands::Init {} = command {
+        // If the command is Init, we don't need to load the config
+        // because we are creating a new one
         init(cli.config).await;
         return;
     }
@@ -114,7 +128,8 @@ async fn main() {
         Commands::Init {} => init(cli.config).await,
         Commands::Cloudflare(cmd) => {
             let api = cloudflare_provider::CloudflareProvider::new().await;
-            let program = CLIProgram::new(api, cli.debug > 0, config);
+
+            let program = CLIProgram::new(api, cli.debug > 0, dry_run, config);
             handle_domain_command(cmd, program).await;
         }
 
