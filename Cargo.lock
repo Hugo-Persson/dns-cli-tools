@@ -333,7 +333,7 @@ dependencies = [
 
 [[package]]
 name = "dns-cli-tools"
-version = "1.0.19"
+version = "1.0.20"
 dependencies = [
  "clap",
  "clap_complete",
