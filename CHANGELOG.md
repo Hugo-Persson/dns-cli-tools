@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.25] - 2026-08-16
+
+### 🐛 Bug Fixes
+
+- Release script no longer depends on semver CLI, aborts on failure
+
 ## [1.0.24] - 2025-04-06
 
 ### 🐛 Bug Fixes
