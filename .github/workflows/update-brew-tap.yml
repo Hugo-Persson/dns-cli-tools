@@ -10,31 +10,30 @@ on:
 jobs:
   run-script:
     runs-on: ubuntu-latest
+    # Only run when triggered manually, by a release, or by a successful Deploy
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     steps:
-      - name: Checkout Different Repository
-        uses: actions/checkout@v2
+      - name: Checkout homebrew tap
+        uses: actions/checkout@v4
         with:
           repository: Hugo-Persson/homebrew-dns-cli-tools
-          token: ${{ secrets.PAT }} # Personal Access Token for accessing the other repository
-          ref: main # Branch or tag to Checkout
+          # Deploy key (write access) on homebrew-dns-cli-tools; does not expire like a PAT.
+          ssh-key: ${{ secrets.TAP_DEPLOY_KEY }}
+          ref: main
       - name: List files
         run: ls -la
       - name: Run Release Script
         run: |
           chmod +x scripts/new-release-dns-cli.sh
           ./scripts/new-release-dns-cli.sh
-      - name: Add changes
-        run: |
-          git add .
-
-      - name: Commit changes
+      - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git commit -m "Automated script run" || echo "No changes to commit"
-
-      - name: Push changes
-        uses: ad-m/github-push-action@master
-        with:
-          repository: Hugo-Persson/homebrew-dns-cli-tools
-          github_token: ${{ secrets.PAT }}
+          git add .
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Automated script run"
+          git push
